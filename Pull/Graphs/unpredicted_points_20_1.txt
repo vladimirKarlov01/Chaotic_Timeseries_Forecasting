@@ -1,0 +1,40 @@
+33
+0 -th point is unpredictable, error =  0.10601842846394077
+30
+1 -th point is predictable, predicted_value:  [0.5100376] error = 0.039287480577661626
+29
+2 -th point is predictable, predicted_value:  [0.49511101] error = 0.014765346249585642
+28
+3 -th point is predictable, predicted_value:  [0.5270453] error = 0.0008200316818604003
+26
+4 -th point is predictable, predicted_value:  [0.55914443] error = 0.011011997655004158
+24
+5 -th point is unpredictable, error =  0.10625003328613303
+17
+6 -th point is predictable, predicted_value:  [0.81873546] error = 0.09540179257759085
+11
+7 -th point is unpredictable, error =  0.6806096102731183
+8
+8 -th point is predictable, predicted_value:  [0.81979241] error = 0.025835694534178333
+8
+9 -th point is unpredictable, error =  0.2993034715735955
+6
+10 -th point is predictable, predicted_value:  [0.51029752] error = 0.0054620368550292175
+6
+11 -th point is predictable, predicted_value:  [0.4921996] error = 0.02919467686545557
+6
+12 -th point is predictable, predicted_value:  [0.46870955] error = 0.052553151345163085
+11
+13 -th point is unpredictable, error =  0.13553639128567996
+11
+14 -th point is predictable, predicted_value:  [0.25403913] error = 0.08615921560971568
+10
+15 -th point is predictable, predicted_value:  [0.09860795] error = 0.05185017929034355
+6
+16 -th point is unpredictable, error =  0.6394749857543034
+6
+17 -th point is unpredictable, error =  0.41849197034560276
+6
+18 -th point is unpredictable, error =  0.5302522539614317
+6
+19 -th point is unpredictable, error =  0.32783682711617046

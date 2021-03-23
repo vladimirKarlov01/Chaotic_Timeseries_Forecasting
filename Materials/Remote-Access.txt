@@ -1,0 +1,60 @@
+Удаленный доступ
+
+For English version scroll down.
+
+Всем доброго времени суток!
+Меня зовут Владимир Карлов (TG: @vladimir_karlov). Мы вместе с Алексеем Рукавишниковым организовываем удаленный доступ к компьютеру в кабинете В. А. Громова. Далее привожу инструкцию для работы с TeamViwer.
+
+1. Скачиваем и устанавливаем TeamViewer с официального сайта (https://www.teamviewer.com/en/download). При установке выбираем "Я хочу использовать бесплатную версию для личного пользования".
+2. Открываем программу и слева нажимаем на "Вход в систему".
+3. В появившемся окне вводим следующие E-mail и пароль.
+E-mail: cs.hse2021@yandex.ru
+Пароль: password123!
+4. Заходим в "Компьютеры и контакты". С помощью двойного нажатия на компьютер с именем 903086054 (он находится в секции "Компьютеры") начинаем сессию удаленного доступа.
+5. Если появилось окно с просьбой подтвердить устройство через E-mail, то заходим в почту (пароль и логин совпадают) и переходим по ссылке в полученном письме.
+6. Пароль от локального пользователь: 
+password123!
+(Убедитесь, что используете правильную раскладку)
+7. Для завершения сессии необходимо нажать крестик в левом верхнем углу окна.
+
+Хочу обратить внимание на несколько важных тонкостей:
+1. Мы используем бесплатную версию TeamViewer, поэтому удаленная работа может осуществляться только 15 часов за 30 дней. В связи с этим необходимо минимизировать количество времени, которое вы проводите в сессии. То есть наиболее приветствуется режим, когда вы заходите, включаете свои вычисления и выходите.
+2. TeamViewer не предоставляет возможности безконфликтной параллельной работы нескольких человек, поэтому не стоит прерывать работу ваших коллег.
+3. Не передавайте логин и пароль третьим лицам и не используйте компьютер в личных целях.
+
+Также прошу написать в следующий документ ПО, которое не установлено на компьютер в кабинете, но необходимо для вашей работы. Это необходимо сделать до 17.03.2021. (Поскольку у локального пользователя отсутствуют права администратора, сделать это самостоятельно не получится). Ссылка:
+https://eduhseru-my.sharepoint.com/:w:/g/personal/vakarlov_edu_hse_ru/EWUFqBdfiBNJsKpt3ub7rtYBOgHTEfQYgkl0XznQFiWP7w?e=Ds7pwW 
+
+По любым возникающим вопросам можно писать на почту karlov.v01@gmail.com или в Telegram(@vladimir_karlov).
+
+С уважением,
+Владимир Карлов
+
+===========================================================
+
+Hello, everyone!
+My name is Vladimir Karlov (TG: @vladimir_karlov). Together with Alexey Rukavishnikov, we're organizing remote access to PC in HSE. Here I'll give instructions for working with TeamViewer.
+
+1. Download and install TeamViewer (https://www.teamviewer.com/en/download).
+2. Open it and click on "Enter system".
+3. Fill up the form with the following E-mail and password:
+E-mail: cs.hse2021@yandex.ru
+Password: password123!
+4. Go to "Computers and Contacts". Then doubleclick on 903086054 in section "Computers". That will start a remote session.
+5. If you're asked to confirm your device via E-mail, you should enter Yandex E-mail (login and password are the same) and follow the link in the most recent mail.
+6. Password for "Локальный пользователь": 
+password123!
+7. To finish session click on the cross in the upper-left corner of the window.
+
+It is important to mention some more details:
+1. We are going to use free version of TeamViewer, that's why total session time is limited to 15 hours per 30 days. It means that you need to minimize the session time. The best option: log in, start computation, log out at once.
+2. TeamViewer doesn't give us an opportunity of parallel work for several persons together, so you shouldn't interrupt the work of colleagues.
+3. Do not share login and password with third parties and do not use your computer for personal purposes.
+
+Also I ask you to list in the following document software which is essential for your work, but is not installed on the PC in HSE. This must be done until 17.03.2021. (Since the local user does not have administrator rights, you will not be able to do this yourself). Link:
+https://eduhseru-my.sharepoint.com/:w:/g/personal/vakarlov_edu_hse_ru/EWUFqBdfiBNJsKpt3ub7rtYBOgHTEfQYgkl0XznQFiWP7w?e=Ds7pwW
+
+If you have any questions, you can write to the mail karlov.v01@gmail.com or Telegram(@vladimir_karlov).
+
+Sincerely, 
+Vladimir Karlov
