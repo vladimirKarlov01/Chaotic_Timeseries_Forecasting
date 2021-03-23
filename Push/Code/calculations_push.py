@@ -9,8 +9,8 @@ import time
 def normalize(arr):
     return (arr - arr.min()) / (arr.max() - arr.min())
 
-LORENZ = normalize(np.genfromtxt("lorenz.txt"))  # последние k элементов ряда - тестовая выборка
-train = np.genfromtxt("lorenz.txt", skip_footer=90000)  # ряд без последних k элементов - тренировочная выборка
+LORENZ = normalize(np.genfromtxt("Materials/lorenz.txt"))  # последние k элементов ряда - тестовая выборка
+train = normalize(np.genfromtxt("Materials/ ", skip_footer=90000))  # ряд без последних k элементов - тренировочная выборка
 
 TEST_BEGIN = 99900
 TEST_END = 100000
@@ -24,89 +24,101 @@ TEST_GAP = 1
 MAX_NORM_DELTA = 0.01  # было 0.015
 MAX_ABS_ERROR = 0.05  # изначально было 0.05
 
+S = 34  # количество предшедствующих точек ряда, необходимое для прогнозирования точки
+
 K_MAX = 4
 
 
 # @jit
-def fill(predictions_sets, predicted_values, accessible_points, shifts_for_each_template, k):
-    new_points = range(min(10, k - len(predictions_sets)))
+def fill(points, predictions_sets, i, k):
+    new_points_range = range(min(10, S + k - len(predictions_sets))) # it's 10 or less
 
-    for interim_point in new_points:
-        print("interim point:", interim_point)
+    for new_point in new_points_range:  #new_point - то не индекс, а порядковый номер добавляемой точки
         for template_number in range(len(templates_by_distances)):
             x, y, z = templates_by_distances[template_number]
 
-            if z < interim_point:
+            if z < new_point:
                 continue
 
-            to_forecast = np.array(
-                [accessible_points[-z + interim_point - y - x - 3],
-                 accessible_points[-z + interim_point - y - 2],
-                 accessible_points[-z + interim_point - 1]]
+            left_part = np.array(
+                [points[-z + new_point - y - x - 3],
+                 points[-z + new_point - y - 2],
+                 points[-z + new_point - 1]]
             )
 
-            if np.isnan(np.sum(to_forecast)):
+            if np.isnan(np.sum(left_part)):
                 # print("template", template_number, "can't be used")
                 continue
 
             for shifted_template in shifts_for_each_template[template_number]:
-                if np.linalg.norm(to_forecast - shifted_template[:3]) <= MAX_NORM_DELTA:
-                    predictions_sets[interim_point].append(shifted_template[3])
+                if np.linalg.norm(left_part - shifted_template[:3]) <= MAX_NORM_DELTA:
+                    predictions_sets[new_point].append(shifted_template[3])
 
-        if (predictions_sets[interim_point]):
-            predicted_values[interim_point] = sum(predictions_sets[interim_point]) / len(
-                 prediction
-            s_sets[interim_point])
-        else:
-            predicted_values[interim_point] = np.nan
-        print("predictions_sets len:", [len(_) for _ in predictions_sets])
-        print("predicted_values:", predicted_values)
+            if predictions_sets[new_point]:
+                predicted_value = sum(predictions_sets[new_point]) / len(predictions_sets[new_point])
+            else:
+                predicted_value = np.nan
 
-def reforecast(points, predictions_sets, shifts_for_each_template, k):
-    last_predicted_index = 34 + номер_итерации
-    for template_number in range(len(templates_by_distances)):
-        x, y, z = templates_by_distances[template_number]
-        # considering all interim points
-        for reforcasting_point_index in range(last_predicted_index, len(points)):
-            pred_sets_index = reforcasting_point_index - last_predicted_index
+            # ЧТО С НЕПРОГНОЗИРУЕМОСТЬЮ ПОСЛЕДНЕЙ
+            # Имеем дело с последней точкой, когда длина point равна максимальной - 1, то есть
+            # len(points) == k + S - 1
 
-            if z < pred_sets_index:  # +-1
+            if (np.isnan(predicted_value) or (abs(LORENZ[i - k + new_point] - predicted_value) > MAX_ABS_ERROR)):
+                points = np.append(points, np.nan)
+                # print("%d-th point is unpredictable, error = %f\n" % (cur_point, abs_errors[-1]))
+            else:
+                points = np.append(points, predicted_value)
+                # print("%d-th point is predictable, predicted_value: %f, error = %f" % (cur_point, predicted_value, abs_errors[-1]))
+
+# @jit
+def reforecast(points, predictions_sets, last_predicted_index, shifts_for_each_template, i, k):
+    # considering all interim points
+    for middle_point in range(last_predicted_index, len(points)):  # middle_point - это индекс в points
+        for template_number in range(len(templates_by_distances)):
+            x, y, z = templates_by_distances[template_number]
+            pred_sets_index = middle_point - last_predicted_index
+
+            if z >= pred_sets_index:  # +-1
                 continue
 
-            to_forecast = np.array(
-                [points[reforcasting_point_index - z - y - x - 3],
-                 points[reforcasting_point_index - z - y - 2],
-                 points[reforcasting_point_index - z - 1]]
+            left_part = np.array(
+                [points[middle_point - z - y - x - 3],
+                 points[middle_point - z - y - 2],
+                 points[middle_point - z - 1]]
             )
 
-            if np.isnan(np.sum(to_forecast)):
+            if np.isnan(np.sum(left_part)):
                 # print("template", template_number, "can't be used")
                 continue
 
             for shifted_template in shifts_for_each_template[template_number]:
-                if np.linalg.norm(to_forecast - shifted_template[:3]) <= MAX_NORM_DELTA:
+                if np.linalg.norm(left_part - shifted_template[:3]) <= MAX_NORM_DELTA:
                     predictions_sets[pred_sets_index].append(shifted_template[3])
 
+        if (np.isnan(predicted_value) or (abs_errors[-1] > MAX_ABS_ERROR and middle_point != steps)): # ЧТО С НЕПРОГНОЗИРУЕМОСТЬЮ ПОСЛЕДНЕЙ
+            accessible_points = np.append(points, np.nan)
+            # print("%d-th point is unpredictable, error = %f\n" % (cur_point, abs_errors[-1]))
+        else:
+            accessible_points = np.append(points, predicted_value)
+            # print("%d-th point is predictable, predicted_value: %f, error = %f" % (cur_point, predicted_value, abs_errors[-1]))
 
-def predict(i, k):  # прогнозирование точки i за k шагов вперед; должна вернуть ошибку на i и прогнозируемость\
-    predictions_sets = []
-    last_predicted_index = i - k + 1  # индекс последней точки, в который был получен абсолютный прогноз
-    points = np.array(LORENZ[i - k - 33: i - k + 1]) +   # правая граница не включена => это список из 34 точек
+# прогнозирование точки point_to_forecast (index) за k шагов вперед; должна вернуть ошибку и прогнозируемость
+def predict(i, k):
+    predictions_sets = np.array([[]] * k)
+    # last_predicted_index = S  # индекс в points последней точки, в который был получен абсолютный прогноз +-1
+    points = np.array(LORENZ[i - k - 33: i - k + 1])  # правая граница не включена => это список из 34 точек
     abs_errors = np.array([])
 
     ## нулевая итерация
-    fill(points, predictions_sets, shifts_for_each_template, k)
+    fill(points, predictions_sets, shifts_for_each_template, i, k)
     ## тут необходимо также добавить одно абсолютное значение
 
-    for cur_point in range(1, k + 1):
-        print("cur_point: ", cur_point)
-        reforecast(points, predictions_sets, shifts_for_each_template, k)
-        fill(points, predictions_sets, shifts_for_each_template, k)
-        print("predictions_sets len:", [len(_) for _ in predictions_sets])
-        print("predicted_values:", predicted_values)
-        predicted_value = predicted_values[0]
-        predictions_sets.pop(0)
-        predicted_values.pop(0)
+    for cur_point in range(1, k + 1): # +-1 в правой границе
+        # print("cur_point: ", cur_point)
+        reforecast(points, predictions_sets, S + cur_point, shifts_for_each_template, k)
+        fill(points, predictions_sets, shifts_for_each_template, i, k)
+        # print("predictions_sets len:", [len(_) for _ in predictions_sets])
+        predicted_value = points[S + cur_point]
 
         abs_errors = np.append(abs_errors, abs(LORENZ[i - k + cur_point] - predicted_value))
 
@@ -119,13 +131,7 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
         # else:
         #     abs_errors = np.append(abs_errors, np.nan)
 
-        if (np.isnan(predicted_value) or (abs_errors[-1] > MAX_ABS_ERROR and cur_point != k)):
-            accessible_points = np.append(points, np.nan)
-            print("%d-th point is unpredictable, error = %f\n" % (cur_point, abs_errors[-1]))
-        else:
-            accessible_points = np.append(points, predicted_value)
-            print("%d-th point is predictable, predicted_value: %f, error = %f" % (
-            cur_point, predicted_value, abs_errors[-1]))
+
 
     # import matplotlib.pyplot as plt
     #
@@ -133,7 +139,7 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
     # plt.plot(np.linspace(0, k, k), LORENZ[i - k:i], color='red')
     # plt.show()
 
-    return (abs(LORENZ[i] - accessible_points[-1]), not np.isnan(accessible_points[-1]))
+    return (abs(LORENZ[i] - points[-1]), not np.isnan(points[-1]))
 
 
 def process_for_each_k(k):
@@ -141,7 +147,6 @@ def process_for_each_k(k):
     nubmer_of_unpredictable = 0
 
     for i in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP):  # till TEST_END + 1
-
         (error, is_predictable) = predict(i, k)
         # print("(error, is_predictable):", (error, is_predictable), '\n')
         if (is_predictable):
