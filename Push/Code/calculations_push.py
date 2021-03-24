@@ -1,5 +1,3 @@
-CHECKING GIT PULL
-
 import numpy as np
 from numba import jit
 from sklearn.cluster import MeanShift
@@ -7,6 +5,14 @@ from itertools import product
 from multiprocessing import Pool
 
 import time
+
+class Point:
+    """DOCSTRING"""
+    def __init__(self, value, prediction_set, is_completed, is_virgin):
+        self.value = value
+        self.prediction_set = prediction_set
+        self.is_comleted = is_completed
+        self.is_vergin = is_virgin
 
 def normalize(arr):
     return (arr - arr.min()) / (arr.max() - arr.min())
@@ -29,6 +35,7 @@ MAX_ABS_ERROR = 0.15  # изначально было 0.05
 S = 34  # количество предшедствующих точек ряда, необходимое для прогнозирования точки
 
 K_MAX = 4
+
 
 
 # @jit
