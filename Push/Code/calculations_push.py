@@ -32,18 +32,18 @@ CLAWS_MAX_DIST = 9
 NUMBER_OF_CLAWS = 4
 
 TRAIN_GAP = 1000
-TEST_GAP = 1
+TEST_GAP = 100
 
 MAX_NORM_DELTA = 0.015  # было 0.015
 MAX_ABS_ERROR = 0.05  # изначально было 0.05
 
 S = 34  # количество предшедствующих точек ряда, необходимое для прогнозирования точки
 
-K_MAX = 4
+K_MAX = 26
 
 @jit
 def reforecast(points, first_not_completed):
-    print("\nreforcasting started:")
+    # print("\nreforcasting started:")
     for template_number in range(len(templates_by_distances)):
         x, y, z = templates_by_distances[template_number]
         for middle_point in range(first_not_completed, len(points)):  # middle_point - это индекс в points
@@ -66,7 +66,7 @@ def reforecast(points, first_not_completed):
                     points[middle_point + z + 1].is_virgin = False
 
     for middle_point in range(first_not_completed, len(points)):
-        print("  recalculating point", middle_point, )
+        # print("  recalculating point", middle_point, )
         point_obj = points[middle_point]
 
         if point_obj.predictions_set.size:
@@ -81,9 +81,9 @@ def reforecast(points, first_not_completed):
             # print("%d-th point is unpredictable, error = %f" % (middle_point, cur_error))
 
         # print("%d-th point is predictable, predicted_value: %f, error = %f" % (middle_point, predicted_value, cur_error))
-    for printed_point_index in range(S, len(points)):
-        points[printed_point_index].info()
-    print('\n')
+    # for printed_point_index in range(S, len(points)):
+    #     points[printed_point_index].info()
+    # print('\n')
 
     points[first_not_completed].is_completed = True
     return points
@@ -91,7 +91,7 @@ def reforecast(points, first_not_completed):
 
 # прогнозирование точки i (index) за k шагов вперед; должна вернуть ошибку и прогнозируемость
 def predict(i, k):
-    print("cur_point = 0:".upper())
+    # print("cur_point = 0:".upper())
     # last_predicted_index = S  # индекс в points последней точки, в который был получен абсолютный прогноз +-1
     complete_points = [Point(_, np.array([]), _, 0, 1) for _ in LORENZ[i - k - 33: i - k + 1]]  # правая граница не включена => это список из 34 + k точек
     new_points = [Point(_, np.array([]), np.nan, 1, 0) for _ in LORENZ[i - k + 1: i + 1]]
@@ -107,7 +107,7 @@ def predict(i, k):
     # тут необходимо также добавить одно абсолютное значение
 
     for cur_point in range(1, k):
-        print("\n\ncur_point = ".upper(), cur_point, ":", sep='')
+        # print("\n\ncur_point = ".upper(), cur_point, ":", sep='')
         # print("cur_point: ", cur_point)
         points = reforecast(points, S + cur_point)
 
@@ -126,7 +126,7 @@ def process_for_each_k(k):
 
     for i in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP):  # till TEST_END + 1
         (error, is_predictable) = predict(i, k)
-        print("(error, is_predictable):", (error, is_predictable), '\n')
+        # print("(error, is_predictable):", (error, is_predictable), '\n')
         if (is_predictable):
             sum_of_abs_errors += error
         else:
@@ -157,15 +157,15 @@ for template_number in range(len(templates_by_distances)):
 # file_rmse = open("RMSE.txt", 'w')
 # file_percent_of_unpredictable = open("percent_of_unpredictable.txt", 'w')
 
-works = range(1, K_MAX + 1)
+works = range(1, K_MAX + 1, 2)
 
-# if __name__ == '__main__':
-#     with Pool(processes=4) as pool:
-#         res = pool.map(process_for_each_k, works)
-#         print(res)
+if __name__ == '__main__':
+    with Pool(processes=4) as pool:
+        res = pool.map(process_for_each_k, works)
+        print(res)
 
-for work in works:
-    process_for_each_k(work)
+# for work in works:
+#     process_for_each_k(work)
 
 # file_rmse.close()
 # file_percent_of_unpredictable.close()
