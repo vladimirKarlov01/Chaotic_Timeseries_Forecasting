@@ -6,13 +6,31 @@ from multiprocessing import Pool
 
 import time
 
+
 class Point:
-    """DOCSTRING"""
-    def __init__(self, value, prediction_set, is_completed, is_virgin):
-        self.value = value
-        self.prediction_set = prediction_set
-        self.is_comleted = is_completed
-        self.is_vergin = is_virgin
+    def __init__(self, real_value):
+        self.real_value = real_value
+
+
+class VirginPoint(Point):
+    def __init__(self, real_value):
+        super().__init__(real_value)
+
+
+class MiddlePoint(Point):
+    def __init__(self, real_value, predictions_set, predicted_value):
+        super().__init__(real_value)
+        self.predictions_set = predictions_set
+        self.predicted_value = predicted_value
+
+    def add_prediction(self, prediction):
+        self.predictions_set = np.append(self.predictions_set, prediction)
+
+
+class CompletedPoint(Point):
+    def __init__(self, real_value):
+        super().__init__(real_value)
+
 
 def normalize(arr):
     return (arr - arr.min()) / (arr.max() - arr.min())
@@ -35,55 +53,6 @@ MAX_ABS_ERROR = 0.15  # изначально было 0.05
 S = 34  # количество предшедствующих точек ряда, необходимое для прогнозирования точки
 
 K_MAX = 4
-
-
-
-# @jit
-def fill(points, predictions_sets, i, k):
-    print("\nfilling started:")
-    new_points_range = range(min(10, S + k - len(points))) # it's 10 or less
-    for new_point in new_points_range:  # new_point - это не индекс, а порядковый номер добавляемой точки
-        print("  adding point", len(points))
-        for template_number in range(len(templates_by_distances)):
-            x, y, z = templates_by_distances[template_number]
-
-            if z < new_point:
-                continue
-
-            left_part = np.array(
-                [points[-z + new_point - y - x - 3],
-                 points[-z + new_point - y - 2],
-                 points[-z + new_point - 1]]
-            )
-
-            if np.isnan(np.sum(left_part)):
-                # print("template", template_number, "can't be used")
-                continue
-
-            for shifted_template in shifts_for_each_template[template_number]:
-                if np.linalg.norm(left_part - shifted_template[:3]) <= MAX_NORM_DELTA:
-                    predictions_sets[new_point].append(shifted_template[3])
-
-        if predictions_sets[new_point]:
-            predicted_value = sum(predictions_sets[new_point]) / len(predictions_sets[new_point])
-        else:
-            predicted_value = np.nan
-
-        # ЧТО С НЕПРОГНОЗИРУЕМОСТЬЮ ПОСЛЕДНЕЙ
-        # Имеем дело с последней точкой, когда длина point равна максимальной - 1, то есть
-        # len(points) == k + S - 1 (верно только для fill)
-
-        cur_error = abs(LORENZ[i - k + len(points) - S + 1] - predicted_value)
-        if np.isnan(predicted_value) or (cur_error > MAX_ABS_ERROR):
-            points = np.append(points, np.nan)
-            print("%d-th point is unpredictable, error = %f" % (new_point, cur_error))
-        else:
-            points = np.append(points, predicted_value)
-            print("%d-th point is predictable, predicted_value: %f, error = %f" % (new_point, predicted_value, cur_error))
-        print([len(cur_set) for cur_set in predictions_sets])
-        print("points length:", len(points))
-
-    return points
 
 
 # @jit
@@ -136,10 +105,10 @@ def reforecast(points, predictions_sets, first_not_absolute, i, k):
 # прогнозирование точки i (index) за k шагов вперед; должна вернуть ошибку и прогнозируемость
 def predict(i, k):
     print("cur_point = 0:".upper())
-    predictions_sets = [[] for _ in range(k)]  # не np.array, потому что разные мощности у множеств внутри
     # last_predicted_index = S  # индекс в points последней точки, в который был получен абсолютный прогноз +-1
-    points = np.array(LORENZ[i - k - 33: i - k + 1])  # правая граница не включена => это список из 34 точек
-
+    complete_points = [CompletedPoint(i, ) for i in range(LORENZ[i - k - 33: i - k + 1])]  # правая граница не включена => это список из 34 + k точек
+    new_points = [VirginPoint(i) for i in range(LORENZ[i - k + 1: i + k + 1])]
+    points = complete_points + new_points
     # нулевая итерация
     points = fill(points, predictions_sets, i, k)
     # тут необходимо также добавить одно абсолютное значение
