@@ -154,7 +154,7 @@ for template_number in range(len(templates_by_distances)):
     tmp = cur_claws_indexes + np.arange(TRAIN_GAP - cur_claws_indexes[3]).reshape(-1, 1)
     shifts_for_each_template.append(LORENZ[tmp])
 
-# file_rmse = open("RMSE.txt", 'w')
+# file_rmse = open("RMSE.txt", 'w') 
 # file_percent_of_unpredictable = open("percent_of_unpredictable.txt", 'w')
 
 works = range(1, K_MAX + 1, 2)
