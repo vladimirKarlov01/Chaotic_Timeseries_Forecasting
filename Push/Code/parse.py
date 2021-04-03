@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def parse():
     file = open("Testing_results/push-1st-test-with-unpred.txt")
     lines = file.readlines()
@@ -17,7 +18,8 @@ def parse():
         print(line[1], file=rmse)
         print(line[2], file=unpred_points_percents)
     rmse.close()
-    # unpred_points.close()
+    unpred_points_percents.close()
+    points.close()
 
     # X = []
     # Y = []
