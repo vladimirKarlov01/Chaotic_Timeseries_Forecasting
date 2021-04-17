@@ -4,8 +4,6 @@ from sklearn.cluster import MeanShift
 from itertools import product
 from multiprocessing import Pool
 
-import time
-
 
 class Point:
     def __init__(self, real_value, predictions_set, predicted_value, is_virgin, is_completed):
@@ -22,8 +20,7 @@ class Point:
 def normalize(arr):
     return (arr - arr.min()) / (arr.max() - arr.min())
 
-LORENZ = (np.genfromtxt("lorenz.txt"))  # последние k элементов ряда - тестовая выборка
-# train = (np.genfromtxt("lorenz.txt", skip_footer=90000))  # ряд без последних k элементов - тренировочная выборка
+LORENZ = np.genfromtxt("lorenz.txt")  # последние k элементов ряда - тестовая выборка
 
 TEST_BEGIN = 99900
 TEST_END = 100000
@@ -41,13 +38,14 @@ S = 34  # количество предшедствующих точек ряд�
 
 K_MAX = 25
 
-@jit
+# @jit
 def reforecast(points, first_not_completed):
     # print("\nreforcasting started:")
     for template_number in range(len(templates_by_distances)):
         x, y, z = templates_by_distances[template_number]
         for middle_point in range(first_not_completed, len(points)):  # middle_point - это индекс в points
-            if middle_point + z + 1 >= len(points) or points[middle_point].is_virgin or points[middle_point + z + 1].is_completed:
+            if middle_point + z + 1 >= len(points) or points[middle_point].is_virgin or \
+                    points[middle_point + z + 1].is_completed or np.isnan(points[middle_point].predicted_value):
                 continue
 
             left_part = np.array(
@@ -96,10 +94,7 @@ def predict(i, k):
     complete_points = [Point(_, np.array([]), _, 0, 1) for _ in LORENZ[i - k - 33: i - k + 1]]  # правая граница не включена => это список из 34 + k точек
     new_points = [Point(_, np.array([]), np.nan, 1, 0) for _ in LORENZ[i - k + 1: i + 1]]
     points = complete_points + new_points
-    # нулевая итерация
-
     reforecast(points, S - 10)
-
     for cur_point in range(1, k):
         # print("\n\ncur_point = ".upper(), cur_point, ":", sep='')
         # print("cur_point: ", cur_point)
