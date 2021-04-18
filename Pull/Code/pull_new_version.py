@@ -123,7 +123,7 @@ templates_by_distances = np.array(list(
 )
 
 # Training - FIT
-shifts_for_each_template = np.array([]).reshape(0, TRAIN_GAP - 3, NUMBER_OF_CLAWS)  # (0, 97, 4)
+shifts_for_each_template = np.array([]).reshape((0, TRAIN_GAP - 3, NUMBER_OF_CLAWS))  # (0, 97, 4)
 for template_number in range(len(templates_by_distances)):
     [x, y, z] = templates_by_distances[template_number]
     cur_claws_indexes = np.array([0, x + 1, x + y + 2, x + y + z + 3])
@@ -132,10 +132,10 @@ for template_number in range(len(templates_by_distances)):
     nan_list = [[np.nan, np.nan, np.nan, np.nan] for _ in range(TRAIN_GAP - (x + y + z + 3), TRAIN_GAP - 3)]
     nan_np_array = np.array(nan_list).reshape(len(nan_list), 4)
     current_template_shifts = np.concatenate([LORENZ[mask_matrix], nan_np_array])  # все свдвиги шаблона данной конфигурации + дополнение
-    shifts_for_each_template = np.concatenate([shifts_for_each_template, current_template_shifts.reshape(1, TRAIN_GAP - 3, NUMBER_OF_CLAWS)])
+    shifts_for_each_template = np.concatenate([shifts_for_each_template, current_template_shifts.reshape((1, TRAIN_GAP - 3, NUMBER_OF_CLAWS))])
 
 
-works = range(1, K_MAX + 1, 2)
+works = range(1, K_MAX + 1, 4)
 
 if __name__ == '__main__':
     with Pool(processes=4) as pool:
