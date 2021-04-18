@@ -108,7 +108,7 @@ def process_for_each_k(k):
     # percent_of_unpredictable = np.append(percent_of_unpredictable, nubmer_of_unpredictable / TEST_GAP)
     # print(k_RMSE, flush=True, file=file_rmse)
     # print(nubmer_of_unpredictable / TEST_GAP, flush=True, file=file_percent_of_unpredictable)
-    print("k =", k, *k_RMSE, nubmer_of_unpredictable / TEST_GAP)
+    print("k =", k, *k_RMSE, nubmer_of_unpredictable / TEST_GAP, flush=True)
     return (k_RMSE, nubmer_of_unpredictable / TEST_GAP)
     # print("sum_of_abs_errors:", sum_of_abs_errors)
     # print("nubmer_of_unpredictable:", nubmer_of_unpredictable, '\n')
@@ -135,10 +135,10 @@ for template_number in range(len(templates_by_distances)):
     shifts_for_each_template = np.concatenate([shifts_for_each_template, current_template_shifts.reshape(1, TRAIN_GAP - 3, NUMBER_OF_CLAWS)])
 
 
-works = range(1, K_MAX + 1, 2)
+works = range(13, K_MAX + 1, 2)
 
 if __name__ == '__main__':
     with Pool(processes=4) as pool:
         res = pool.map(process_for_each_k, works)
-        print(res)
+        print(res, flush=True)
 
