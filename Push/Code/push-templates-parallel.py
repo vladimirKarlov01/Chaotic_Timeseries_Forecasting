@@ -1,10 +1,21 @@
 import numpy as np
-from numba import jit
+from numba import njit, float64, int8, int32, typed
+from numba.experimental import jitclass
 from sklearn.cluster import MeanShift
 from itertools import product
 from multiprocessing import Pool
 import time
 
+spec = [
+    ('real_value', float64),
+    ('predictions_set', float64[:]),
+    ('predicted_value', float64),
+    ('is_virgin', int8),
+    ('is_completed', int8),
+]
+
+
+@jitclass(spec)
 class Point:
     def __init__(self, real_value, predictions_set, predicted_value, is_virgin, is_completed):
         self.real_value = real_value
@@ -13,8 +24,8 @@ class Point:
         self.is_virgin = is_virgin
         self.is_completed = is_completed
 
-    def info(self):
-        print('{ ', self.predictions_set.size, self.real_value, self.predicted_value, '}', end=' ', flush=True)
+    # def info(self):
+    #     print('{ ', self.predictions_set.size, self.real_value, self.predicted_value, '}', end=' ', flush=True)
 
 
 def normalize(arr):
@@ -37,9 +48,9 @@ MAX_ABS_ERROR = 0.05  # изначально было 0.05
 
 S = 34  # количество предшедствующих точек ряда, необходимое для прогнозирования точки
 
-K_MAX = 61
+K_MAX = 100
 
-# @jit
+@njit
 def reforecast(points, first_not_completed):
     # print("\nreforcasting started:")
     for template_number in range(len(templates_by_distances)):
@@ -69,7 +80,11 @@ def reforecast(points, first_not_completed):
         point_obj = points[middle_point]
 
         if point_obj.predictions_set.size:
-            point_obj.predicted_value = sum(point_obj.predictions_set) / len(point_obj.predictions_set)
+            pred_set_sum = 0
+            for elem in point_obj.predictions_set:
+                pred_set_sum += elem
+
+            point_obj.predicted_value = pred_set_sum / len(point_obj.predictions_set)
         else:
             continue
 
@@ -131,29 +146,36 @@ def predict(i, k):
 #     return k_RMSE, number_of_unpredictable / TEST_GAP
 
 
-# t1 = time.time()
+
 # Generating templates
 templates_by_distances = np.array(list(
     product(range(CLAWS_MAX_DIST + 1), range(CLAWS_MAX_DIST + 1), range(CLAWS_MAX_DIST + 1)))
 )
 
 # Training - FIT
-shifts_for_each_template = []
+shifts_for_each_template = np.array([]).reshape(0, TRAIN_GAP - 3, NUMBER_OF_CLAWS)  # (0, 97, 4)
 for template_number in range(len(templates_by_distances)):
     [x, y, z] = templates_by_distances[template_number]
     cur_claws_indexes = np.array([0, x + 1, x + y + 2, x + y + z + 3])
-    tmp = cur_claws_indexes + np.arange(TRAIN_GAP - cur_claws_indexes[3]).reshape(-1, 1)
-    shifts_for_each_template.append(LORENZ[tmp])
+    mask_matrix = cur_claws_indexes + np.arange(TRAIN_GAP - cur_claws_indexes[3]).reshape(-1, 1)  # матрица сдвигов
+    # nan values to add at the end
+    nan_list = [[np.nan, np.nan, np.nan, np.nan] for _ in range(TRAIN_GAP - (x + y + z + 3), TRAIN_GAP - 3)]
+    nan_np_array = np.array(nan_list).reshape(len(nan_list), 4)
+    current_template_shifts = np.concatenate([LORENZ[mask_matrix], nan_np_array])  # все свдвиги шаблона данной конфигурации + дополнение
+    shifts_for_each_template = np.concatenate([shifts_for_each_template, current_template_shifts.reshape(1, TRAIN_GAP - 3, NUMBER_OF_CLAWS)])
 
-for k in range(1, K_MAX + 1, 4):
+# t1 = time.time()
+for k in range(33, K_MAX + 1, 4):
     sum_of_abs_errors = 0
     number_of_unpredictable = 0
 
     works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]
+
     if __name__ == '__main__':
         with Pool(processes=50) as pool:
             test_points = pool.starmap(predict, works)
-            # print(test_points)
+
+    # test_points = [predict(work[0], work[1]) for work in works]
 
     for (error, is_predictable) in test_points:  # till TEST_END + 1
         # print("(error, is_predictable):", (error, is_predictable), '\n')

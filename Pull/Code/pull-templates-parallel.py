@@ -146,7 +146,7 @@ for k in range(1, K_MAX + 1, 4):
 
     works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]
     if __name__ == '__main__':
-        with Pool(processes=50) as pool:
+        with Pool(processes=25) as pool:
             test_points = pool.starmap(predict, works)
             # print(test_points)
 
