@@ -30,14 +30,14 @@ CLAWS_MAX_DIST = 9
 NUMBER_OF_CLAWS = 4
 
 TRAIN_GAP = 1000
-TEST_GAP = 4
+TEST_GAP = 100
 
 MAX_NORM_DELTA = 0.015  # было 0.015
 MAX_ABS_ERROR = 0.05  # изначально было 0.05
 
 S = 34  # количество предшедствующих точек ряда, необходимое для прогнозирования точки
 
-K_MAX = 7
+K_MAX = 61
 
 # @jit
 def reforecast(points, first_not_completed):
@@ -111,25 +111,25 @@ def predict(arr_i_k):
     return abs(LORENZ[i] - points[-1].predicted_value), not np.isnan(points[-1].predicted_value)
 
 
-def process_for_each_k(k):
-    sum_of_abs_errors = 0
-    number_of_unpredictable = 0
-
-    for i in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP):  # till TEST_END + 1
-        (error, is_predictable) = predict(i, k)
-        # print("(error, is_predictable):", (error, is_predictable), '\n')
-        if (is_predictable):
-            sum_of_abs_errors += error
-        else:
-            number_of_unpredictable += 1
-
-    if number_of_unpredictable == TEST_GAP:
-        k_RMSE = np.nan
-    else:
-        k_RMSE = sum_of_abs_errors / (TEST_GAP - number_of_unpredictable)
-
-    print("k =", k, k_RMSE, number_of_unpredictable / TEST_GAP, flush=True)
-    return k_RMSE, number_of_unpredictable / TEST_GAP
+# def process_for_each_k(k):
+#     sum_of_abs_errors = 0
+#     number_of_unpredictable = 0
+#
+#     for i in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP):  # till TEST_END + 1
+#         (error, is_predictable) = predict(i, k)
+#         # print("(error, is_predictable):", (error, is_predictable), '\n')
+#         if (is_predictable):
+#             sum_of_abs_errors += error
+#         else:
+#             number_of_unpredictable += 1
+#
+#     if number_of_unpredictable == TEST_GAP:
+#         k_RMSE = np.nan
+#     else:
+#         k_RMSE = sum_of_abs_errors / (TEST_GAP - number_of_unpredictable)
+#
+#     print("k =", k, k_RMSE, number_of_unpredictable / TEST_GAP, flush=True)
+#     return k_RMSE, number_of_unpredictable / TEST_GAP
 
 
 # t1 = time.time()
@@ -146,13 +146,13 @@ for template_number in range(len(templates_by_distances)):
     tmp = cur_claws_indexes + np.arange(TRAIN_GAP - cur_claws_indexes[3]).reshape(-1, 1)
     shifts_for_each_template.append(LORENZ[tmp])
 
-for k in range(1, K_MAX + 1, 2):
+for k in range(1, K_MAX + 1, 4):
     sum_of_abs_errors = 0
     number_of_unpredictable = 0
 
     works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]
     if __name__ == '__main__':
-        with Pool(processes=4) as pool:
+        with Pool(processes=50) as pool:
             test_points = pool.map(predict, works)
             # print(test_points)
 
