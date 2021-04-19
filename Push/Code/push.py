@@ -117,7 +117,7 @@ def process_for_each_k(k):
     for i in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP):  # till TEST_END + 1
         (error, is_predictable) = predict(i, k)
         # print("(error, is_predictable):", (error, is_predictable), '\n')
-        if (is_predictable):
+        if is_predictable:
             sum_of_abs_errors += error
         else:
             number_of_unpredictable += 1
@@ -128,7 +128,7 @@ def process_for_each_k(k):
         k_RMSE = sum_of_abs_errors / (TEST_GAP - number_of_unpredictable)
 
     print("k =", k, k_RMSE, number_of_unpredictable / TEST_GAP, flush=True)
-    return (k_RMSE, number_of_unpredictable / TEST_GAP)
+    return k_RMSE, number_of_unpredictable / TEST_GAP
 
 
 # Generating templates
