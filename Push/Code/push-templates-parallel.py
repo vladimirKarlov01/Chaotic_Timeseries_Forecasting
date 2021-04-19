@@ -3,7 +3,7 @@ from numba import jit
 from sklearn.cluster import MeanShift
 from itertools import product
 from multiprocessing import Pool
-
+import time
 
 class Point:
     def __init__(self, real_value, predictions_set, predicted_value, is_virgin, is_completed):
@@ -14,7 +14,7 @@ class Point:
         self.is_completed = is_completed
 
     def info(self):
-        print('{ ', self.predictions_set.size, self.real_value, self.predicted_value, '}', end=' ')
+        print('{ ', self.predictions_set.size, self.real_value, self.predicted_value, '}', end=' ', flush=True)
 
 
 def normalize(arr):
@@ -30,14 +30,14 @@ CLAWS_MAX_DIST = 9
 NUMBER_OF_CLAWS = 4
 
 TRAIN_GAP = 1000
-TEST_GAP = 100
+TEST_GAP = 4
 
 MAX_NORM_DELTA = 0.015  # было 0.015
 MAX_ABS_ERROR = 0.05  # изначально было 0.05
 
 S = 34  # количество предшедствующих точек ряда, необходимое для прогнозирования точки
 
-K_MAX = 26
+K_MAX = 7
 
 # @jit
 def reforecast(points, first_not_completed):
@@ -89,7 +89,8 @@ def reforecast(points, first_not_completed):
 
 
 # прогнозирование точки i (index) за k шагов вперед; должна вернуть ошибку и прогнозируемость
-def predict(i, k):
+def predict(arr_i_k):
+    [i, k] = arr_i_k
     # print("cur_point = 0:".upper())
     # last_predicted_index = S  # индекс в points последней точки, в который был получен абсолютный прогноз +-1
     complete_points = [Point(_, np.array([]), _, 0, 1) for _ in LORENZ[i - k - 33: i - k + 1]]  # 34 точки
@@ -127,10 +128,11 @@ def process_for_each_k(k):
     else:
         k_RMSE = sum_of_abs_errors / (TEST_GAP - number_of_unpredictable)
 
-    print("k =", k, k_RMSE, number_of_unpredictable / TEST_GAP)
-    return (k_RMSE, number_of_unpredictable / TEST_GAP)
+    print("k =", k, k_RMSE, number_of_unpredictable / TEST_GAP, flush=True)
+    return k_RMSE, number_of_unpredictable / TEST_GAP
 
 
+# t1 = time.time()
 # Generating templates
 templates_by_distances = np.array(list(
     product(range(CLAWS_MAX_DIST + 1), range(CLAWS_MAX_DIST + 1), range(CLAWS_MAX_DIST + 1)))
@@ -144,18 +146,30 @@ for template_number in range(len(templates_by_distances)):
     tmp = cur_claws_indexes + np.arange(TRAIN_GAP - cur_claws_indexes[3]).reshape(-1, 1)
     shifts_for_each_template.append(LORENZ[tmp])
 
-# file_rmse = open("RMSE.txt", 'w') 
-# file_percent_of_unpredictable = open("percent_of_unpredictable.txt", 'w')
+for k in range(1, K_MAX + 1, 2):
+    sum_of_abs_errors = 0
+    number_of_unpredictable = 0
 
-works = range(1, K_MAX + 1, 2)
+    works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]
+    if __name__ == '__main__':
+        with Pool(processes=4) as pool:
+            test_points = pool.map(predict, works)
+            # print(test_points)
 
-if __name__ == '__main__':
-    with Pool(processes=4) as pool:
-        res = pool.map(process_for_each_k, works)
-        print(res)
+    for (error, is_predictable) in test_points:  # till TEST_END + 1
+        # print("(error, is_predictable):", (error, is_predictable), '\n')
+        if is_predictable:
+            sum_of_abs_errors += error
+        else:
+            number_of_unpredictable += 1
 
-# for work in works:
-#     process_for_each_k(work)
+    if number_of_unpredictable == TEST_GAP:
+        k_RMSE = np.nan
+    else:
+        k_RMSE = sum_of_abs_errors / (TEST_GAP - number_of_unpredictable)
 
-# file_rmse.close()
-# file_percent_of_unpredictable.close()
+    print("k =", k, k_RMSE, number_of_unpredictable / TEST_GAP, flush=True)
+
+# t2 = time.time()
+# print("time:", t2 - t1)
+
