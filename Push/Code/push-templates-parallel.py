@@ -89,8 +89,7 @@ def reforecast(points, first_not_completed):
 
 
 # прогнозирование точки i (index) за k шагов вперед; должна вернуть ошибку и прогнозируемость
-def predict(arr_i_k):
-    [i, k] = arr_i_k
+def predict(i, k):
     # print("cur_point = 0:".upper())
     # last_predicted_index = S  # индекс в points последней точки, в который был получен абсолютный прогноз +-1
     complete_points = [Point(_, np.array([]), _, 0, 1) for _ in LORENZ[i - k - 33: i - k + 1]]  # 34 точки
@@ -153,7 +152,7 @@ for k in range(1, K_MAX + 1, 4):
     works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]
     if __name__ == '__main__':
         with Pool(processes=50) as pool:
-            test_points = pool.map(predict, works)
+            test_points = pool.starmap(predict, works)
             # print(test_points)
 
     for (error, is_predictable) in test_points:  # till TEST_END + 1

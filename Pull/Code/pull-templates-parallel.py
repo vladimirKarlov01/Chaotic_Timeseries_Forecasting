@@ -89,36 +89,36 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
     return abs(LORENZ[i] - predicted_value), not np.isnan(predicted_value)
 
 
-def process_for_each_k(k):
-    # print("k =", k, "START\n")
-    sum_of_abs_errors = 0
-    nubmer_of_unpredictable = 0
-
-    for i in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP):  # till TEST_END + 1
-
-        (error, is_predictable) = predict(i, k)
-        # print("(error, is_predictable):", (error, is_predictable), '\n')
-        if (is_predictable):
-            sum_of_abs_errors += error
-        else:
-            nubmer_of_unpredictable += 1
-
-    # считаем k_RMSE
-    # делить на кол-во всех точек или на кол-во прогнозируемых
-    if nubmer_of_unpredictable == TEST_GAP:
-        k_RMSE = np.nan
-    else:
-        k_RMSE = sum_of_abs_errors / (TEST_GAP - nubmer_of_unpredictable)
-
-    # RMSE = np.append(RMSE, k_RMSE)
-    # percent_of_unpredictable = np.append(percent_of_unpredictable, nubmer_of_unpredictable / TEST_GAP)
-    # print(k_RMSE, flush=True, file=file_rmse)
-    # print(nubmer_of_unpredictable / TEST_GAP, flush=True, file=file_percent_of_unpredictable)
-    print("k =", k, k_RMSE, nubmer_of_unpredictable / TEST_GAP, flush=True)
-    return (k_RMSE, nubmer_of_unpredictable / TEST_GAP)
-    # print("sum_of_abs_errors:", sum_of_abs_errors)
-    # print("nubmer_of_unpredictable:", nubmer_of_unpredictable, '\n')
-    # print("k =", k, "FINISH\n\n\n")
+# def process_for_each_k(k):
+#     # print("k =", k, "START\n")
+#     sum_of_abs_errors = 0
+#     nubmer_of_unpredictable = 0
+#
+#     for i in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP):  # till TEST_END + 1
+#
+#         (error, is_predictable) = predict(i, k)
+#         # print("(error, is_predictable):", (error, is_predictable), '\n')
+#         if (is_predictable):
+#             sum_of_abs_errors += error
+#         else:
+#             nubmer_of_unpredictable += 1
+#
+#     # считаем k_RMSE
+#     # делить на кол-во всех точек или на кол-во прогнозируемых
+#     if nubmer_of_unpredictable == TEST_GAP:
+#         k_RMSE = np.nan
+#     else:
+#         k_RMSE = sum_of_abs_errors / (TEST_GAP - nubmer_of_unpredictable)
+#
+#     # RMSE = np.append(RMSE, k_RMSE)
+#     # percent_of_unpredictable = np.append(percent_of_unpredictable, nubmer_of_unpredictable / TEST_GAP)
+#     # print(k_RMSE, flush=True, file=file_rmse)
+#     # print(nubmer_of_unpredictable / TEST_GAP, flush=True, file=file_percent_of_unpredictable)
+#     print("k =", k, k_RMSE, nubmer_of_unpredictable / TEST_GAP, flush=True)
+#     return (k_RMSE, nubmer_of_unpredictable / TEST_GAP)
+#     # print("sum_of_abs_errors:", sum_of_abs_errors)
+#     # print("nubmer_of_unpredictable:", nubmer_of_unpredictable, '\n')
+#     # print("k =", k, "FINISH\n\n\n")
 
 
 # t1 = time.time()
@@ -140,11 +140,26 @@ for template_number in range(len(templates_by_distances)):
     current_template_shifts = np.concatenate([LORENZ[mask_matrix], nan_np_array])  # все свдвиги шаблона данной конфигурации + дополнение
     shifts_for_each_template = np.concatenate([shifts_for_each_template, current_template_shifts.reshape(1, TRAIN_GAP - 3, NUMBER_OF_CLAWS)])
 
+for k in range(1, K_MAX + 1, 4):
+    sum_of_abs_errors = 0
+    number_of_unpredictable = 0
 
-works = range(1, K_MAX + 1, 4)
+    works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]
+    if __name__ == '__main__':
+        with Pool(processes=50) as pool:
+            test_points = pool.starmap(predict, works)
+            # print(test_points)
 
-if __name__ == '__main__':
-    with Pool(processes=4) as pool:
-        res = pool.map(process_for_each_k, works)
-        print(res, flush=True)
+    for (error, is_predictable) in test_points:  # till TEST_END + 1
+        # print("(error, is_predictable):", (error, is_predictable), '\n')
+        if is_predictable:
+            sum_of_abs_errors += error
+        else:
+            number_of_unpredictable += 1
 
+    if number_of_unpredictable == TEST_GAP:
+        k_RMSE = np.nan
+    else:
+        k_RMSE = sum_of_abs_errors / (TEST_GAP - number_of_unpredictable)
+
+    print("k =", k, k_RMSE, number_of_unpredictable / TEST_GAP, flush=True)

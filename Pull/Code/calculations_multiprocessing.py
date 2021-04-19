@@ -26,7 +26,7 @@ MAX_ABS_ERROR = 0.05  # изначально было 0.05
 
 K_MAX = 50
 
-@jit
+# @jit
 def fill_prediction(accessible_points, shifts_for_each_template):
     prediction = np.array([])
     for template_number in range(len(templates_by_distances)):
@@ -52,9 +52,9 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
     abs_errors = np.array([])
 
     for cur_point in range(1, k + 1):
-        # print("cur_point: ", cur_point)
+        print("cur_point: ", cur_point)
         prediction = fill_prediction(accessible_points, shifts_for_each_template)
-        # print("prediction size:", prediction.size)
+        print("prediction size:", prediction.size)
         prediction = prediction.reshape(-1, 1)
         if (prediction.size):
             clusters = MeanShift().fit(prediction)
@@ -132,13 +132,14 @@ for template_number in range(len(templates_by_distances)):
 
 works = range(1, K_MAX + 1, 2)
 
+process_for_each_k(81)
 # if __name__ == '__main__':
 #     with Pool(processes=4) as pool:
 #         res = pool.map(process_for_each_k, works)
 #         print(res)
 
-for work in works:
-    process_for_each_k(work)
+# for work in works:
+#     process_for_each_k(work)
 
 t2 = time.time()
 
