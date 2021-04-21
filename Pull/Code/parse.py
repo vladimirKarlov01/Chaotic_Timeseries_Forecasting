@@ -1,23 +1,26 @@
-import numpy as np
+def is_normal_line(line):
+    return not line == "\n"
 
 def parse():
-    file = open("tests-after-correcting-reverse/no_unpred.txt")
+    file = open("Testing_results/21-04-2021-pull-mean/pull/pull.txt")
     lines = file.readlines()
+    lines = list(filter(is_normal_line, lines))
     for i in range(len(lines)):
         lines[i] = list(map(float, lines[i].split()[2:]))
     file.close()
     lines.sort()
     # print(lines)
 
-    points = open("tests-after-correcting-reverse/points_no_unpred.txt", "w")
-    rmse = open("tests-after-correcting-reverse/RMSE_no_unpred.txt", "w")
-    # unpred_points = open("tests-after-correcting-reverse/percent_of_unpredictable.txt", "w")
+    points = open("Testing_results/21-04-2021-pull-mean/pull/points.txt", "w")
+    rmse = open("Testing_results/21-04-2021-pull-mean/pull/RMSE.txt", "w")
+    unpred_points_percents = open("Testing_results/21-04-2021-pull-mean/pull/percent_of_unpredictable.txt", "w")
     for line in lines:
         print(line[0], file=points)
         print(line[1], file=rmse)
-        # print(line[2], file=unpred_points)
+        print(line[2], file=unpred_points_percents)
     rmse.close()
-    # unpred_points.close()
+    unpred_points_percents.close()
+    points.close()
 
     # X = []
     # Y = []

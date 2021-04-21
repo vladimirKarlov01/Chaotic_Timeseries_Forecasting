@@ -1,24 +1,33 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-RMSE_no_unpred = np.genfromtxt("tests-after-correcting-reverse/RMSE_no_unpred.txt")
-points = np.genfromtxt("tests-after-correcting-reverse/points.txt")
-points_no_unpred = np.genfromtxt("tests-after-correcting-reverse/points_no_unpred.txt")
-RMSE = np.genfromtxt("tests-after-correcting-reverse/RMSE.txt")
-percent_of_unpredictable = np.genfromtxt("tests-after-correcting-reverse/percent_of_unpredictable.txt")
+
+# no unpredictable points
+points1 = np.genfromtxt("Testing_results/21-04-2021-pull-mean/pull-no-unpred/points.txt")
+rmse1 = np.genfromtxt("Testing_results/21-04-2021-pull-mean/pull-no-unpred/RMSE.txt")
+unpred_points_percent1 = np.genfromtxt("Testing_results/21-04-2021-pull-mean/pull-no-unpred/percent_of_unpredictable.txt")
+
+# with unpredictable points
+points2 = np.genfromtxt("Testing_results/21-04-2021-pull-mean/pull/points.txt")
+rmse2 = np.genfromtxt("Testing_results/21-04-2021-pull-mean/pull/RMSE.txt")
+unpred_points_percent2 = np.genfromtxt("Testing_results/21-04-2021-pull-mean/pull/percent_of_unpredictable.txt")
+
 
 fig, (ax1, ax2) = plt.subplots(
     nrows=1, ncols=2,
     figsize=(16, 8)
 )
-ax1.scatter(points, RMSE, c="orange")
-ax1.scatter(points_no_unpred, RMSE_no_unpred, c="blue")
+
+# no unpredictable points
+ax1.plot(points1, rmse1, c="orange")
+ax1.plot(points2, rmse2, c="blue")
 ax1.set_title("RMSE")
 ax1.set_xlabel("k")
 ax1.set_ylabel("rmse")
 
-ax2.scatter(points, percent_of_unpredictable, c="orange")
-ax2.scatter(np.linspace(1, 50, 50), [0] * 50, c="blue")
+# with unpredictable points
+ax2.plot(points1, unpred_points_percent1, c="orange")
+ax2.plot(points2, unpred_points_percent2, c="blue")
 ax2.set_title("% of unpredictable points")
 ax2.set_xlabel("k")
 ax2.set_ylabel("%")
