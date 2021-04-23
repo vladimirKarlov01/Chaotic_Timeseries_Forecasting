@@ -18,13 +18,15 @@ TEST_END = 100000
 CLAWS_MAX_DIST = 9
 NUMBER_OF_CLAWS = 4
 
-TRAIN_GAP = 10000
-TEST_GAP = 100
+TRAIN_GAP = 1000
+TEST_GAP = 1
 
 MAX_NORM_DELTA = 0.007  # было 0.015
 MAX_ABS_ERROR = 0.05  # изначально было 0.05
 
 K_MAX = 100
+
+DAEMON = 1
 
 
 @njit
@@ -74,7 +76,7 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
 
         # print("predicted_value:", predicted_value)
         # print("cur_error:", cur_error)
-        if not prediction_set.size or (cur_error > MAX_ABS_ERROR and cur_point != k):
+        if not prediction_set.size or (DAEMON and cur_error > MAX_ABS_ERROR and cur_point != k):
             points[34 + cur_point - 1] = np.nan
             # print("%d-th point is unpredictable, error = %f\n" % (cur_point, cur_error))
         else:
@@ -89,38 +91,6 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
     return abs(LORENZ[i] - predicted_value), not np.isnan(predicted_value)
 
 
-# def process_for_each_k(k):
-#     # print("k =", k, "START\n")
-#     sum_of_abs_errors = 0
-#     nubmer_of_unpredictable = 0
-#
-#     for i in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP):  # till TEST_END + 1
-#
-#         (error, is_predictable) = predict(i, k)
-#         # print("(error, is_predictable):", (error, is_predictable), '\n')
-#         if (is_predictable):
-#             sum_of_abs_errors += error
-#         else:
-#             nubmer_of_unpredictable += 1
-#
-#     # считаем k_RMSE
-#     # делить на кол-во всех точек или на кол-во прогнозируемых
-#     if nubmer_of_unpredictable == TEST_GAP:
-#         k_RMSE = np.nan
-#     else:
-#         k_RMSE = sum_of_abs_errors / (TEST_GAP - nubmer_of_unpredictable)
-#
-#     # RMSE = np.append(RMSE, k_RMSE)
-#     # percent_of_unpredictable = np.append(percent_of_unpredictable, nubmer_of_unpredictable / TEST_GAP)
-#     # print(k_RMSE, flush=True, file=file_rmse)
-#     # print(nubmer_of_unpredictable / TEST_GAP, flush=True, file=file_percent_of_unpredictable)
-#     print("k =", k, k_RMSE, nubmer_of_unpredictable / TEST_GAP, flush=True)
-#     return (k_RMSE, nubmer_of_unpredictable / TEST_GAP)
-#     # print("sum_of_abs_errors:", sum_of_abs_errors)
-#     # print("nubmer_of_unpredictable:", nubmer_of_unpredictable, '\n')
-#     # print("k =", k, "FINISH\n\n\n")
-
-
 # t1 = time.time()
 
 # Generating templates
@@ -129,7 +99,7 @@ templates_by_distances = np.array(list(
 )
 
 # Training - FIT
-shifts_for_each_template = np.array([]).reshape(0, TRAIN_GAP - 3, NUMBER_OF_CLAWS)  # (0, 97, 4)
+shifts_for_each_template = np.array([]).reshape(0, TRAIN_GAP - 3, NUMBER_OF_CLAWS)
 for template_number in range(len(templates_by_distances)):
     [x, y, z] = templates_by_distances[template_number]
     cur_claws_indexes = np.array([0, x + 1, x + y + 2, x + y + z + 3])
@@ -146,7 +116,7 @@ for k in range(1, K_MAX + 1, 4):
 
     works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]
     if __name__ == '__main__':
-        with Pool(processes=25) as pool:
+        with Pool(processes=4) as pool:
             test_points = pool.starmap(predict, works)
             # print(test_points)
 

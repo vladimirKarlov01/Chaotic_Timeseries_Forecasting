@@ -41,7 +41,7 @@ CLAWS_MAX_DIST = 9
 NUMBER_OF_CLAWS = 4
 
 TRAIN_GAP = 1000
-TEST_GAP = 100
+TEST_GAP = 1
 
 MAX_NORM_DELTA = 0.015  # было 0.015
 MAX_ABS_ERROR = 0.05  # изначально было 0.05
@@ -49,6 +49,9 @@ MAX_ABS_ERROR = 0.05  # изначально было 0.05
 S = 34  # количество предшедствующих точек ряда, необходимое для прогнозирования точки
 
 K_MAX = 100
+
+DAEMON = 1
+
 
 @njit
 def reforecast(points, first_not_completed):
@@ -90,7 +93,7 @@ def reforecast(points, first_not_completed):
 
         cur_error = abs(point_obj.real_value - point_obj.predicted_value)
 
-        if np.isnan(point_obj.predicted_value) or (cur_error > MAX_ABS_ERROR and middle_point != len(points) - 1):
+        if np.isnan(point_obj.predicted_value) or (DAEMON and cur_error > MAX_ABS_ERROR and middle_point != len(points) - 1):
             point_obj.predicted_value = np.nan
             # print("%d-th point is unpredictable, error = %f" % (middle_point, cur_error))
 
@@ -125,28 +128,6 @@ def predict(i, k):
     return abs(LORENZ[i] - points[-1].predicted_value), not np.isnan(points[-1].predicted_value)
 
 
-# def process_for_each_k(k):
-#     sum_of_abs_errors = 0
-#     number_of_unpredictable = 0
-#
-#     for i in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP):  # till TEST_END + 1
-#         (error, is_predictable) = predict(i, k)
-#         # print("(error, is_predictable):", (error, is_predictable), '\n')
-#         if (is_predictable):
-#             sum_of_abs_errors += error
-#         else:
-#             number_of_unpredictable += 1
-#
-#     if number_of_unpredictable == TEST_GAP:
-#         k_RMSE = np.nan
-#     else:
-#         k_RMSE = sum_of_abs_errors / (TEST_GAP - number_of_unpredictable)
-#
-#     print("k =", k, k_RMSE, number_of_unpredictable / TEST_GAP, flush=True)
-#     return k_RMSE, number_of_unpredictable / TEST_GAP
-
-
-
 # Generating templates
 templates_by_distances = np.array(list(
     product(range(CLAWS_MAX_DIST + 1), range(CLAWS_MAX_DIST + 1), range(CLAWS_MAX_DIST + 1)))
@@ -172,7 +153,7 @@ for k in range(33, K_MAX + 1, 4):
     works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]
 
     if __name__ == '__main__':
-        with Pool(processes=50) as pool:
+        with Pool(processes=4) as pool:
             test_points = pool.starmap(predict, works)
 
     # test_points = [predict(work[0], work[1]) for work in works]
