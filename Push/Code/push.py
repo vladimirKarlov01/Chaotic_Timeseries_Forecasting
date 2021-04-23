@@ -32,7 +32,6 @@ def normalize(arr):
     return (arr - arr.min()) / (arr.max() - arr.min())
 
 LORENZ = np.genfromtxt("lorenz.txt")  # последние k элементов ряда - тестовая выборка
-# train = (np.genfromtxt("lorenz.txt", skip_footer=90000))  # ряд без последних k элементов - тренировочная выборка
 
 TEST_BEGIN = 99900
 TEST_END = 100000
