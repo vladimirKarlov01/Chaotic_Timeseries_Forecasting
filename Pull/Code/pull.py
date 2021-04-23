@@ -13,6 +13,7 @@ def normalize(arr):
 LORENZ = np.genfromtxt("lorenz.txt")  # последние k элементов ряда - тестовая выборка
 
 # TEST_BEGIN = 99900
+
 # TEST_END = 100000
 
 TEST_BEGIN = 13000
