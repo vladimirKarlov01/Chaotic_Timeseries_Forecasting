@@ -2,7 +2,7 @@ def is_normal_line(line):
     return not line == "\n"
 
 def parse():
-    file = open("Testing_results/21-04-2021-push-mean/push-no-unpred/push-no-unpred.txt")
+    file = open("Testing_results/28-04-2021-push-mean/push/push.txt")
     lines = file.readlines()
     lines = list(filter(is_normal_line, lines))
     for i in range(len(lines)):
@@ -11,9 +11,9 @@ def parse():
     lines.sort()
     # print(lines)
 
-    points = open("Testing_results/21-04-2021-push-mean/push-no-unpred/points.txt", "w")
-    rmse = open("Testing_results/21-04-2021-push-mean/push-no-unpred/RMSE.txt", "w")
-    unpred_points_percents = open("Testing_results/21-04-2021-push-mean/push-no-unpred/percent_of_unpredictable.txt", "w")
+    points = open("Testing_results/28-04-2021-push-mean/push/points.txt", "w")
+    rmse = open("Testing_results/28-04-2021-push-mean/push/RMSE.txt", "w")
+    unpred_points_percents = open("Testing_results/28-04-2021-push-mean/push/percent_of_unpredictable.txt", "w")
     for line in lines:
         print(line[0], file=points)
         print(line[1], file=rmse)

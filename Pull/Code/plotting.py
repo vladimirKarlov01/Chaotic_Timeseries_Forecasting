@@ -3,14 +3,14 @@ import matplotlib.pyplot as plt
 
 
 # no unpredictable points
-points1 = np.genfromtxt("Testing_results/21-04-2021-pull-mean/pull-no-unpred/points.txt")
-rmse1 = np.genfromtxt("Testing_results/21-04-2021-pull-mean/pull-no-unpred/RMSE.txt")
-unpred_points_percent1 = np.genfromtxt("Testing_results/21-04-2021-pull-mean/pull-no-unpred/percent_of_unpredictable.txt")
+points1 = np.genfromtxt("Testing_results/27-04-2021-pull-mean/pull-no-unpred/points.txt")
+rmse1 = np.genfromtxt("Testing_results/27-04-2021-pull-mean/pull-no-unpred/RMSE.txt")
+unpred_points_percent1 = np.genfromtxt("Testing_results/27-04-2021-pull-mean/pull-no-unpred/percent_of_unpredictable.txt")
 
 # with unpredictable points
-points2 = np.genfromtxt("Testing_results/21-04-2021-pull-mean/pull/points.txt")
-rmse2 = np.genfromtxt("Testing_results/21-04-2021-pull-mean/pull/RMSE.txt")
-unpred_points_percent2 = np.genfromtxt("Testing_results/21-04-2021-pull-mean/pull/percent_of_unpredictable.txt")
+points2 = np.genfromtxt("Testing_results/27-04-2021-pull-mean/pull/points.txt")
+rmse2 = np.genfromtxt("Testing_results/27-04-2021-pull-mean/pull/RMSE.txt")
+unpred_points_percent2 = np.genfromtxt("Testing_results/27-04-2021-pull-mean/pull/percent_of_unpredictable.txt")
 
 
 fig, (ax1, ax2) = plt.subplots(
