@@ -31,19 +31,23 @@ class Point:
 def normalize(arr):
     return (arr - arr.min()) / (arr.max() - arr.min())
 
+
 LORENZ = np.genfromtxt("lorenz.txt")  # последние k элементов ряда - тестовая выборка
 
-TEST_BEGIN = 99900
-TEST_END = 100000
+# TEST_BEGIN = 99900
+# TEST_END = 100000
+
+TEST_BEGIN = 13000
+TEST_END = 13400
 
 CLAWS_MAX_DIST = 9
 NUMBER_OF_CLAWS = 4
 
-TRAIN_GAP = 1000
-TEST_GAP = 1
+TRAIN_GAP = 10000
+TEST_GAP = 1000
 
-MAX_NORM_DELTA = 0.015  # было 0.015
-MAX_ABS_ERROR = 0.05  # изначально было 0.05
+MAX_NORM_DELTA = 0.004  # было 0.015
+MAX_ABS_ERROR = 0.03  # изначально было 0.05
 
 S = 34  # количество предшедствующих точек ряда, необходимое для прогнозирования точки
 
@@ -98,7 +102,7 @@ def reforecast(points, first_not_completed):
 
         # print("%d-th point is predictable, predicted_value: %f, error = %f" % (middle_point, predicted_value, cur_error))
     # for printed_point_index in range(S, len(points)):
-    #     points[printed_point_index].info()
+    #     print("set size:", points[printed_point_index].predictions_set.size, "error:", abs(points[printed_point_index].real_value - points[printed_point_index].predicted_value))
     # print('\n')
 
     points[first_not_completed].is_completed = True
@@ -110,19 +114,19 @@ def predict(i, k):
     # print("cur_point = 0:".upper())
     # last_predicted_index = S  # индекс в points последней точки, в который был получен абсолютный прогноз +-1
     complete_points = [Point(_, np.array([]), _, 0, 1) for _ in LORENZ[i - k - 33: i - k + 1]]  # 34 точки
-    new_points = [Point(_, np.array([]), np.nan, 1, 0) for _ in LORENZ[i - k + 1: i + 1]] # k точек
+    new_points = [Point(_, np.array([]), np.nan, 1, 0) for _ in LORENZ[i - k + 1: i + 1]]  # k точек
     points = complete_points + new_points
     reforecast(points, S - 10)
     for cur_point in range(1, k):
         # print("\n\ncur_point = ".upper(), cur_point, ":", sep='')
         # print("cur_point: ", cur_point)
         points = reforecast(points, S + cur_point)
-
-    # import matplotlib.pyplot as plt
     #
-    # plt.plot(np.linspace(0, k, k), accessible_points[-k - 1:], color="blue")
-    # plt.plot(np.linspace(0, k, k), LORENZ[i - k:i], color='red')
+    # import matplotlib.pyplot as plt
+    # plt.plot(np.linspace(0, k, k), [p.predicted_value for p in points[-k:]], color="blue")
+    # plt.plot(np.linspace(0, k, k), LORENZ[i - k + 1:i + 1], color='red')
     # plt.show()
+
 
     return abs(LORENZ[i] - points[-1].predicted_value), not np.isnan(points[-1].predicted_value)
 
@@ -133,26 +137,28 @@ templates_by_distances = np.array(list(
 )
 
 # Training - FIT
-shifts_for_each_template = np.array([]).reshape(0, TRAIN_GAP - 3, NUMBER_OF_CLAWS)  # (0, 97, 4)
+shifts_for_each_template = np.array([]).reshape((0, TRAIN_GAP - 3, NUMBER_OF_CLAWS))  # (0, 97, 4)
 for template_number in range(len(templates_by_distances)):
     [x, y, z] = templates_by_distances[template_number]
     cur_claws_indexes = np.array([0, x + 1, x + y + 2, x + y + z + 3])
     mask_matrix = cur_claws_indexes + np.arange(TRAIN_GAP - cur_claws_indexes[3]).reshape(-1, 1)  # матрица сдвигов
+    mask_matrix += 3000
     # nan values to add at the end
     nan_list = [[np.nan, np.nan, np.nan, np.nan] for _ in range(TRAIN_GAP - (x + y + z + 3), TRAIN_GAP - 3)]
     nan_np_array = np.array(nan_list).reshape(len(nan_list), 4)
     current_template_shifts = np.concatenate([LORENZ[mask_matrix], nan_np_array])  # все свдвиги шаблона данной конфигурации + дополнение
-    shifts_for_each_template = np.concatenate([shifts_for_each_template, current_template_shifts.reshape(1, TRAIN_GAP - 3, NUMBER_OF_CLAWS)])
+    shifts_for_each_template = np.concatenate([shifts_for_each_template, current_template_shifts.reshape((1, TRAIN_GAP - 3, NUMBER_OF_CLAWS))])
+
 
 # t1 = time.time()
-for k in range(33, K_MAX + 1, 4):
+for k in range(1, K_MAX + 1, 8):
     sum_of_abs_errors = 0
     number_of_unpredictable = 0
 
     works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]
 
     if __name__ == '__main__':
-        with Pool(processes=4) as pool:
+        with Pool(processes=100) as pool:
             test_points = pool.starmap(predict, works)
 
     # test_points = [predict(work[0], work[1]) for work in works]
