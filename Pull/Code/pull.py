@@ -16,18 +16,18 @@ LORENZ = np.genfromtxt("lorenz.txt")  # последние k элементов 
 # TEST_END = 100000
 
 TEST_BEGIN = 13000
-TEST_END = 13400
+TEST_END = 14000
 
 CLAWS_MAX_DIST = 9
 NUMBER_OF_CLAWS = 4
 
 TRAIN_GAP = 10000
-TEST_GAP = 400
+TEST_GAP = 1000
 
 MAX_NORM_DELTA = 0.007  # было 0.015
 MAX_ABS_ERROR = 0.05  # изначально было 0.05
 
-K_MAX = 100
+K_MAX = 110
 
 DAEMON = 0
 
@@ -62,9 +62,8 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
 
     for cur_point in range(1, k + 1):
         # print("cur_point: ", cur_point)
-        prediction_set = np.array(fill_prediction(points, cur_point)).reshape(-1, 1)
         prediction_set = np.array(fill_prediction(points, cur_point))
-        print("prediction_set size:", prediction_set.size)
+        # print("prediction_set size:", prediction_set.size)
         if prediction_set.size:
             # clusters = MeanShift().fit(prediction_set)
             # largest_cluster = np.argmax(np.bincount(clusters.labels_))
@@ -78,7 +77,7 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
             predicted_value = np.nan
 
         # print("predicted_value:", predicted_value)
-        print("cur_error:", cur_error)
+        # print("cur_error:", cur_error)
         if not prediction_set.size or (DAEMON and cur_error > MAX_ABS_ERROR and cur_point != k):
             points[34 + cur_point - 1] = np.nan
             # print("%d-th point is unpredictable, error = %f\n" % (cur_point, cur_error))
@@ -93,7 +92,6 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
 
     return abs(LORENZ[i] - predicted_value), not np.isnan(predicted_value)
 
-
 # t1 = time.time()
 
 # Generating templates
@@ -102,7 +100,7 @@ templates_by_distances = np.array(list(
 )
 
 # Training - FIT
-shifts_for_each_template = np.array([]).reshape(0, TRAIN_GAP - 3, NUMBER_OF_CLAWS) # пустой, но нужных размеров
+shifts_for_each_template = np.array([]).reshape((0, TRAIN_GAP - 3, NUMBER_OF_CLAWS))  # пустой, но нужных размеров
 for template_number in range(len(templates_by_distances)):
     [x, y, z] = templates_by_distances[template_number]
     cur_claws_indexes = np.array([0, x + 1, x + y + 2, x + y + z + 3])
@@ -112,7 +110,7 @@ for template_number in range(len(templates_by_distances)):
     nan_list = [[np.nan, np.nan, np.nan, np.nan] for _ in range(TRAIN_GAP - (x + y + z + 3), TRAIN_GAP - 3)]
     nan_np_array = np.array(nan_list).reshape(len(nan_list), 4)
     current_template_shifts = np.concatenate([LORENZ[mask_matrix], nan_np_array])  # все свдвиги шаблона данной конфигурации + дополнение
-    shifts_for_each_template = np.concatenate([shifts_for_each_template, current_template_shifts.reshape(1, TRAIN_GAP - 3, NUMBER_OF_CLAWS)])
+    shifts_for_each_template = np.concatenate([shifts_for_each_template, current_template_shifts.reshape((1, TRAIN_GAP - 3, NUMBER_OF_CLAWS))])
 
 for k in range(1, K_MAX + 1, 4):
     sum_of_abs_errors = 0
@@ -120,7 +118,7 @@ for k in range(1, K_MAX + 1, 4):
 
     works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]  # till TEST_END + 1
     if __name__ == '__main__':
-        with Pool(processes=25) as pool:
+        with Pool(processes=4) as pool:
             test_points = pool.starmap(predict, works)
             # print(test_points)
 
