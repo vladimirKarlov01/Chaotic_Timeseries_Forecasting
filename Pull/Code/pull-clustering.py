@@ -66,7 +66,6 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
         prediction_set = np.array(fill_prediction(points, cur_point)).reshape(-1, 1)
         # print("prediction_set size:", prediction_set.size)
         if prediction_set.size:
-            prediction_set = prediction_set.reshape(-1, 1)
             clusters = DBSCAN(eps=0.05).fit(prediction_set)
             largest_cluster = np.argmax(np.bincount(clusters.labels_ + 1))
             largest_cluster -= 1  # выше +1, тут -1, чтобы сработал bincount на шумах

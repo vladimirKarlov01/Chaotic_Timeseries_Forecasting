@@ -63,46 +63,32 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
                        [0 for _ in range(k)])  # правая граница не включена => это список из 34 + k точек
     monotonous_growth_counter = 0
     previous_num_of_clusters = 0
+
     for cur_point in range(1, k + 1):
-        # print("cur_point: ", cur_point)
         prediction_set = np.array(fill_prediction(points, cur_point)).reshape(-1, 1)
-        # print("prediction_set size:", prediction_set.size)
         if prediction_set.size:
-            prediction_set = prediction_set.reshape(-1, 1)
             clusters = DBSCAN(eps=0.05).fit(prediction_set)
             largest_cluster = np.argmax(np.bincount(clusters.labels_ + 1))
-            largest_cluster -= 1  # выше +1, тут -1, чтобы сработал bincount на шумах
 
-            if max(prediction_set) - min(prediction_set) > previous_num_of_clusters:
+            cur_num_of_clusters = max(clusters.labels_)
+            if cur_num_of_clusters > previous_num_of_clusters:
                 monotonous_growth_counter += 1
             else:
                 monotonous_growth_counter = 0
-            previous_spread = max(prediction_set) - min(prediction_set)
+            previous_num_of_clusters = cur_num_of_clusters
 
-            predicted_value = prediction_set[clusters.labels_ == largest_cluster].mean()
-            # colors = ['r', 'y', 'g', 'b', 'k', 'm']
-            # for i in range(prediction_set.size):
-            #     plt.scatter([1], prediction_set[i], color=colors[clusters.labels_[i]])
-            # plt.show()
-            cur_error = abs(LORENZ[i - k + cur_point] - predicted_value)
+            if RD and monotonous_growth_counter >= 3 and cur_point != k:
+                points[34 + cur_point - 1] = np.nan
+            else:
+                points[34 + cur_point - 1] = prediction_set[clusters.labels_ == largest_cluster].mean()
         else:
-            cur_error = np.nan
-            predicted_value = np.nan
-
-        # print("predicted_value:", predicted_value)
-        # print("cur_error:", cur_error)
-        if not prediction_set.size or (RD and monotonous_growth_counter >= 3 and cur_point != k):
             points[34 + cur_point - 1] = np.nan
-            # print("%d-th point is unpredictable, error = %f\n" % (cur_point, cur_error))
-        else:
-            points[34 + cur_point - 1] = predicted_value
-            # print("%d-th point is predictable, predicted_value: %f, error = %f\n" % (cur_point, predicted_value, cur_error))
+            monotonous_growth_counter = 0
 
     # plt.plot(np.linspace(0, k, k), points[-k:], color="blue")
     # plt.plot(np.linspace(0, k, k), LORENZ[i - k + 1:i + 1], color='red')
     # plt.show()
-
-    return abs(LORENZ[i] - predicted_value), not np.isnan(predicted_value)
+    return abs(LORENZ[i] - points[-1]), not np.isnan(points[-1])
 
 
 # t1 = time.time()

@@ -67,13 +67,14 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
 
 
         # print("prediction_set size:", prediction_set.size)
+        cur_spread = max(prediction_set) - min(prediction_set)
         if prediction_set.size:
-            if max(prediction_set) - min(prediction_set) > previous_spread:
+            if cur_spread > previous_spread:
                 monotonous_growth_counter += 1
             else:
                 monotonous_growth_counter = 0
 
-            previous_spread = max(prediction_set) - min(prediction_set)
+            previous_spread = cur_spread
 
             if RG and monotonous_growth_counter >= 3 and cur_point != k:
                 points[34 + cur_point - 1] = np.nan
@@ -85,8 +86,7 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
             points[34 + cur_point - 1] = np.nan
             monotonous_growth_counter = 0
 
-        # print("predicted_value:", predicted_value)
-        # print("cur_error:", cur_error)
+
     # import matplotlib.pyplot as plt
     # plt.plot(np.linspace(0, k, k), points[-k:], color="blue")
     # plt.plot(np.linspace(0, k, k), LORENZ[i - k + 1:i + 1], color='red')
