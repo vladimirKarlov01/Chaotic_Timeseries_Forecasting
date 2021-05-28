@@ -21,8 +21,8 @@ TEST_END = 13400
 CLAWS_MAX_DIST = 9
 NUMBER_OF_CLAWS = 4
 
-TRAIN_GAP = 10000
-TEST_GAP = 100
+TRAIN_GAP = 1000
+TEST_GAP = 10
 
 MAX_NORM_DELTA = 0.007  # было 0.015
 MAX_ABS_ERROR = 0.05  # изначально было 0.05
@@ -68,38 +68,31 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
 
         # print("prediction_set size:", prediction_set.size)
         if prediction_set.size:
-            # clusters = MeanShift().fit(prediction_set)
-            # largest_cluster = np.argmax(np.bincount(clusters.labels_))
-            # predicted_value = clusters.cluster_centers_[largest_cluster]
-            # cur_error = abs(LORENZ[i - k + cur_point] - predicted_value)
-
             if max(prediction_set) - min(prediction_set) > previous_spread:
                 monotonous_growth_counter += 1
             else:
                 monotonous_growth_counter = 0
+
             previous_spread = max(prediction_set) - min(prediction_set)
 
-            predicted_value = prediction_set.mean()
-            cur_error = abs(LORENZ[i - k + cur_point] - predicted_value)
+            if RG and monotonous_growth_counter >= 3 and cur_point != k:
+                points[34 + cur_point - 1] = np.nan
+            else:
+                points[34 + cur_point - 1] = prediction_set.mean()
+                # cur_error = abs(LORENZ[i - k + cur_point] - predicted_value)
         else:
-            cur_error = np.nan
-            predicted_value = np.nan
+            # cur_error = np.nan
+            points[34 + cur_point - 1] = np.nan
             monotonous_growth_counter = 0
 
         # print("predicted_value:", predicted_value)
         # print("cur_error:", cur_error)
-        if not prediction_set.size or (RG and monotonous_growth_counter >= 3 and cur_point != k):
-            points[34 + cur_point - 1] = np.nan
-            # print("%d-th point is unpredictable, error = %f\n" % (cur_point, cur_error))
-        else:
-            points[34 + cur_point - 1] = predicted_value
-            # print("%d-th point is predictable, predicted_value: %f, error = %f\n" % (cur_point, predicted_value, cur_error))
     # import matplotlib.pyplot as plt
     # plt.plot(np.linspace(0, k, k), points[-k:], color="blue")
     # plt.plot(np.linspace(0, k, k), LORENZ[i - k + 1:i + 1], color='red')
     # plt.show()
 
-    return abs(LORENZ[i] - predicted_value), not np.isnan(predicted_value)
+    return abs(LORENZ[i] - points[-1]), not np.isnan(points[-1])
 
 
 # t1 = time.time()
@@ -129,7 +122,7 @@ for k in range(1, K_MAX + 1, 8):
 
     works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]  # till TEST_END + 1
     if __name__ == '__main__':
-        with Pool(processes=6) as pool:
+        with Pool(processes=4) as pool:
             test_points = pool.starmap(predict, works)
             # print(test_points)
 
