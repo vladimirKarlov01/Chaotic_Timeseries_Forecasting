@@ -23,14 +23,14 @@ CLAWS_MAX_DIST = 9
 NUMBER_OF_CLAWS = 4
 
 TRAIN_GAP = 10000
-TEST_GAP = 1000
+TEST_GAP = 50
 
 MAX_NORM_DELTA = 0.007  # было 0.015
-MAX_ABS_ERROR = 0.025  # изначально было 0.05
+MAX_ABS_ERROR = 0.02  # изначально было 0.05
 
 K_MAX = 100
 
-DAEMON = 0
+DAEMON = 1
 
 
 @njit
@@ -67,14 +67,29 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
         # print("prediction_set size:", prediction_set.size)
         if prediction_set.size:
             clusters = DBSCAN(eps=0.05).fit(prediction_set)
-            largest_cluster = np.argmax(np.bincount(clusters.labels_ + 1))
-            largest_cluster -= 1  # выше +1, тут -1, чтобы сработал bincount на шумах
-            predicted_value = prediction_set[clusters.labels_ == largest_cluster].mean()
-            # colors = ['r', 'y', 'g', 'b', 'k', 'm']
-            # for i in range(prediction_set.size):
-            #     plt.scatter([1], prediction_set[i], color=colors[clusters.labels_[i]])
-            # plt.show()
-            cur_error = abs(LORENZ[i - k + cur_point] - predicted_value)
+
+            # print("size ", prediction_set.size)
+            # print("prediction_set:\n", prediction_set)
+            # print("labels:\n ", clusters.labels_)
+            # print()
+
+            prediction_set = prediction_set[clusters.labels_ >= 0]
+            labels = clusters.labels_[clusters.labels_ >= 0]
+            if prediction_set.size:
+                # print("NEW size ", prediction_set.size)
+                # print("NEW prediction_set:\n", prediction_set)
+                # print("NEW labels:\n ", labels)
+
+                largest_cluster = np.argmax(np.bincount(labels))
+                predicted_value = prediction_set[labels == largest_cluster].mean()
+                # colors = ['r', 'y', 'g', 'b', 'k', 'm']
+                # for i in range(prediction_set.size):
+                #     plt.scatter([1], prediction_set[i], color=colors[clusters.labels_[i]])
+                # plt.show()
+                cur_error = abs(LORENZ[i - k + cur_point] - predicted_value)
+            else:
+                cur_error = np.nan
+                predicted_value = np.nan
         else:
             cur_error = np.nan
             predicted_value = np.nan
@@ -115,8 +130,8 @@ for template_number in range(len(templates_by_distances)):
     current_template_shifts = np.concatenate([LORENZ[mask_matrix], nan_np_array])  # все свдвиги шаблона данной конфигурации + дополнение
     shifts_for_each_template = np.concatenate([shifts_for_each_template, current_template_shifts.reshape((1, TRAIN_GAP - 3, NUMBER_OF_CLAWS))])
 
-
-for k in range(1, K_MAX + 1, 4):
+# predict(13500, 80)
+for k in range(1, K_MAX + 1, 8):
     sum_of_abs_errors = 0
     number_of_unpredictable = 0
 

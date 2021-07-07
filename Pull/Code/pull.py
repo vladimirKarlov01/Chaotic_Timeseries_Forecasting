@@ -21,15 +21,15 @@ TEST_END = 14000
 CLAWS_MAX_DIST = 9
 NUMBER_OF_CLAWS = 4
 
-TRAIN_GAP = 10000
-TEST_GAP = 1000
+TRAIN_GAP = 1000
+TEST_GAP = 1
 
-MAX_NORM_DELTA = 0.007  # было 0.015
+MAX_NORM_DELTA = 0.015  # было 0.015
 MAX_ABS_ERROR = 0.05  # изначально было 0.05
 
 K_MAX = 110
 
-DAEMON = 0
+DAEMON = 1
 
 
 @njit
@@ -55,7 +55,7 @@ def fill_prediction(points, cur_point):
     return prediction_set
 
 
-@njit
+# @njit
 def predict(i, k):  # прогнозирование точки i за k шагов вперед; должна вернуть ошибку на i и прогнозируемость
     points = np.append(LORENZ[i - k - 33: i - k + 1],
                        [0 for _ in range(k)])  # правая граница не включена => это список из 34 + k точек
@@ -85,10 +85,10 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
             points[34 + cur_point - 1] = predicted_value
             # print("%d-th point is predictable, predicted_value: %f, error = %f\n" % (cur_point, predicted_value, cur_error))
 
-    # import matplotlib.pyplot as plt
-    # plt.plot(np.linspace(0, k, k), points[-k:], color="blue")
-    # plt.plot(np.linspace(0, k, k), LORENZ[i - k + 1:i + 1], color='red')
-    # plt.show()
+    import matplotlib.pyplot as plt
+    plt.plot(np.linspace(0, k, k), points[-k:], color="blue")
+    plt.plot(np.linspace(0, k, k), LORENZ[i - k + 1:i + 1], color='red')
+    plt.show()
 
     return abs(LORENZ[i] - predicted_value), not np.isnan(predicted_value)
 
@@ -112,26 +112,29 @@ for template_number in range(len(templates_by_distances)):
     current_template_shifts = np.concatenate([LORENZ[mask_matrix], nan_np_array])  # все свдвиги шаблона данной конфигурации + дополнение
     shifts_for_each_template = np.concatenate([shifts_for_each_template, current_template_shifts.reshape((1, TRAIN_GAP - 3, NUMBER_OF_CLAWS))])
 
-for k in range(1, K_MAX + 1, 4):
-    sum_of_abs_errors = 0
-    number_of_unpredictable = 0
+predict(13550, 100)
 
-    works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]  # till TEST_END + 1
-    if __name__ == '__main__':
-        with Pool(processes=4) as pool:
-            test_points = pool.starmap(predict, works)
-            # print(test_points)
 
-    for (error, is_predictable) in test_points:
-        # print("(error, is_predictable):", (error, is_predictable), '\n')
-        if is_predictable:
-            sum_of_abs_errors += error
-        else:
-            number_of_unpredictable += 1
-
-    if number_of_unpredictable == TEST_GAP:
-        k_RMSE = np.nan
-    else:
-        k_RMSE = sum_of_abs_errors / (TEST_GAP - number_of_unpredictable)
-
-    print("k =", k, k_RMSE, number_of_unpredictable / TEST_GAP, flush=True)
+# for k in range(1, K_MAX + 1, 4):
+#     sum_of_abs_errors = 0
+#     number_of_unpredictable = 0
+#
+#     works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]  # till TEST_END + 1
+#     if __name__ == '__main__':
+#         with Pool(processes=4) as pool:
+#             test_points = pool.starmap(predict, works)
+#             # print(test_points)
+#
+#     for (error, is_predictable) in test_points:
+#         # print("(error, is_predictable):", (error, is_predictable), '\n')
+#         if is_predictable:
+#             sum_of_abs_errors += error
+#         else:
+#             number_of_unpredictable += 1
+#
+#     if number_of_unpredictable == TEST_GAP:
+#         k_RMSE = np.nan
+#     else:
+#         k_RMSE = sum_of_abs_errors / (TEST_GAP - number_of_unpredictable)
+#
+#     print("k =", k, k_RMSE, number_of_unpredictable / TEST_GAP, flush=True)

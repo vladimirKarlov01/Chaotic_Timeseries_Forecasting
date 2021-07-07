@@ -27,7 +27,6 @@ TRAIN_GAP = 10000
 TEST_GAP = 1000
 
 MAX_NORM_DELTA = 0.007  # было 0.015
-MAX_ABS_ERROR = 0.025  # изначально было 0.05
 
 K_MAX = 100
 
@@ -65,22 +64,32 @@ def predict(i, k):  # прогнозирование точки i за k шаг�
     previous_num_of_clusters = 0
 
     for cur_point in range(1, k + 1):
+        # print("cur_point: ", cur_point)
+        # print("monotonous_growth_counter: ", monotonous_growth_counter)
+        # print("previous_num_of_clusters: ", previous_num_of_clusters)
         prediction_set = np.array(fill_prediction(points, cur_point)).reshape(-1, 1)
         if prediction_set.size:
             clusters = DBSCAN(eps=0.05).fit(prediction_set)
-            largest_cluster = np.argmax(np.bincount(clusters.labels_ + 1))
 
-            cur_num_of_clusters = max(clusters.labels_)
-            if cur_num_of_clusters > previous_num_of_clusters:
-                monotonous_growth_counter += 1
+            prediction_set = prediction_set[clusters.labels_ >= 0]
+            labels = clusters.labels_[clusters.labels_ >= 0]
+            if prediction_set.size:
+                largest_cluster = np.argmax(np.bincount(labels))
+
+                cur_num_of_clusters = max(labels)
+                if cur_num_of_clusters > previous_num_of_clusters:
+                    monotonous_growth_counter += 1
+                elif cur_num_of_clusters < previous_num_of_clusters:
+                    monotonous_growth_counter = 0
+                previous_num_of_clusters = cur_num_of_clusters
+
+                if RD and monotonous_growth_counter >= 3 and cur_point != k:
+                    points[34 + cur_point - 1] = np.nan
+                else:
+                    points[34 + cur_point - 1] = prediction_set[labels == largest_cluster].mean()
             else:
-                monotonous_growth_counter = 0
-            previous_num_of_clusters = cur_num_of_clusters
-
-            if RD and monotonous_growth_counter >= 3 and cur_point != k:
                 points[34 + cur_point - 1] = np.nan
-            else:
-                points[34 + cur_point - 1] = prediction_set[clusters.labels_ == largest_cluster].mean()
+                monotonous_growth_counter = 0
         else:
             points[34 + cur_point - 1] = np.nan
             monotonous_growth_counter = 0
@@ -113,6 +122,8 @@ for template_number in range(len(templates_by_distances)):
     shifts_for_each_template = np.concatenate(
         [shifts_for_each_template, current_template_shifts.reshape((1, TRAIN_GAP - 3, NUMBER_OF_CLAWS))])
 
+# predict(13500, 50)
+#
 for k in range(1, K_MAX + 1, 4):
     sum_of_abs_errors = 0
     number_of_unpredictable = 0
