@@ -15,7 +15,7 @@ spec = [
 ]
 
 
-@jitclass(spec)
+# @jitclass(spec)
 class Point:
     def __init__(self, real_value, predictions_set, predicted_value, is_virgin, is_completed):
         self.real_value = real_value
@@ -43,10 +43,10 @@ TEST_END = 13400
 CLAWS_MAX_DIST = 9
 NUMBER_OF_CLAWS = 4
 
-TRAIN_GAP = 10000
+TRAIN_GAP = 1000
 TEST_GAP = 1000
 
-MAX_NORM_DELTA = 0.004  # было 0.015
+MAX_NORM_DELTA = 0.015  # было 0.015
 MAX_ABS_ERROR = 0.03  # изначально было 0.05
 
 S = 34  # количество предшедствующих точек ряда, необходимое для прогнозирования точки
@@ -55,8 +55,15 @@ K_MAX = 100
 
 DAEMON = 1
 
+def print_result_in_file(points):
+    file = open("prepared_prediction.txt", "w")
+    for printed_point in points[34:]:
+        print(printed_point.predicted_value, file=file, flush=True)
+    file.close()
 
-@njit
+
+
+# @njit
 def reforecast(points, first_not_completed):
     # print("\nreforcasting started:")
     for template_number in range(len(templates_by_distances)):
@@ -82,7 +89,7 @@ def reforecast(points, first_not_completed):
                     points[middle_point + z + 1].is_virgin = False
 
     for middle_point in range(first_not_completed, len(points)):
-        # print("  recalculating point", middle_point, )
+        print("  recalculating point", middle_point, )
         point_obj = points[middle_point]
 
         if point_obj.predictions_set.size:
@@ -98,14 +105,16 @@ def reforecast(points, first_not_completed):
 
         if np.isnan(point_obj.predicted_value) or (DAEMON and cur_error > MAX_ABS_ERROR and middle_point != len(points) - 1):
             point_obj.predicted_value = np.nan
-            # print("%d-th point is unpredictable, error = %f" % (middle_point, cur_error))
+            print("%d-th point is unpredictable, error = %f" % (middle_point, cur_error))
 
-        # print("%d-th point is predictable, predicted_value: %f, error = %f" % (middle_point, predicted_value, cur_error))
-    # for printed_point_index in range(S, len(points)):
-    #     print("set size:", points[printed_point_index].predictions_set.size, "error:", abs(points[printed_point_index].real_value - points[printed_point_index].predicted_value))
-    # print('\n')
+        print("%d-th point is predictable, predicted_value: %f, error = %f" % (middle_point, point_obj.predicted_value, cur_error))
+    for printed_point_index in range(S, len(points)):
+        print("set size:", points[printed_point_index].predictions_set.size, "error:", abs(points[printed_point_index].real_value - points[printed_point_index].predicted_value))
+    print('\n')
 
     points[first_not_completed].is_completed = True
+
+    print_result_in_file(points)
     return points
 
 
@@ -121,11 +130,11 @@ def predict(i, k):
         # print("\n\ncur_point = ".upper(), cur_point, ":", sep='')
         # print("cur_point: ", cur_point)
         points = reforecast(points, S + cur_point)
-    #
-    # import matplotlib.pyplot as plt
-    # plt.plot(np.linspace(0, k, k), [p.predicted_value for p in points[-k:]], color="blue")
-    # plt.plot(np.linspace(0, k, k), LORENZ[i - k + 1:i + 1], color='red')
-    # plt.show()
+
+    import matplotlib.pyplot as plt
+    plt.scatter(np.linspace(0, k, k), [p.predicted_value for p in points[-k:]], color="blue")
+    plt.plot(np.linspace(0, k, k), LORENZ[i - k + 1:i + 1], color='red')
+    plt.show()
 
 
     return abs(LORENZ[i] - points[-1].predicted_value), not np.isnan(points[-1].predicted_value)
@@ -151,32 +160,33 @@ for template_number in range(len(templates_by_distances)):
 
 
 # t1 = time.time()
-for k in range(1, K_MAX + 1, 8):
-    sum_of_abs_errors = 0
-    number_of_unpredictable = 0
-
-    works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]
-
-    if __name__ == '__main__':
-        with Pool(processes=100) as pool:
-            test_points = pool.starmap(predict, works)
-
-    # test_points = [predict(work[0], work[1]) for work in works]
-
-    for (error, is_predictable) in test_points:  # till TEST_END + 1
-        # print("(error, is_predictable):", (error, is_predictable), '\n')
-        if is_predictable:
-            sum_of_abs_errors += error
-        else:
-            number_of_unpredictable += 1
-
-    if number_of_unpredictable == TEST_GAP:
-        k_RMSE = np.nan
-    else:
-        k_RMSE = sum_of_abs_errors / (TEST_GAP - number_of_unpredictable)
-
-    print("k =", k, k_RMSE, number_of_unpredictable / TEST_GAP, flush=True)
+# for k in range(1, K_MAX + 1, 8):
+#     sum_of_abs_errors = 0
+#     number_of_unpredictable = 0
+#
+#     works = [[test_point, k] for test_point in range(TEST_BEGIN, TEST_BEGIN + TEST_GAP)]
+#
+#     if __name__ == '__main__':
+#         with Pool(processes=100) as pool:
+#             test_points = pool.starmap(predict, works)
+#
+#     # test_points = [predict(work[0], work[1]) for work in works]
+#
+#     for (error, is_predictable) in test_points:  # till TEST_END + 1
+#         # print("(error, is_predictable):", (error, is_predictable), '\n')
+#         if is_predictable:
+#             sum_of_abs_errors += error
+#         else:
+#             number_of_unpredictable += 1
+#
+#     if number_of_unpredictable == TEST_GAP:
+#         k_RMSE = np.nan
+#     else:
+#         k_RMSE = sum_of_abs_errors / (TEST_GAP - number_of_unpredictable)
+#
+#     print("k =", k, k_RMSE, number_of_unpredictable / TEST_GAP, flush=True)
 
 # t2 = time.time()
 # print("time:", t2 - t1)
 
+predict(13580, 10)

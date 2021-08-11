@@ -8,12 +8,14 @@ import time
 
 
 class Point:
-    def __init__(self, real_value, predictions_set, predicted_value, is_virgin, is_completed):
+    def __init__(self, real_value, predictions_set, predicted_value, is_virgin, is_completed, changed, error=np.inf):
         self.real_value = real_value
         self.predictions_set = predictions_set
         self.predicted_value = predicted_value
         self.is_virgin = is_virgin
         self.is_completed = is_completed
+        self.changed = changed
+        self.error = error
 
     def info(self):
         print("{ set size:", self.predictions_set.size, "error:", abs(self.real_value - self.predicted_value), "}", end=' ', flush=True)
@@ -44,8 +46,24 @@ K_MAX = 100
 DAEMON = 1
 
 INITIAL_ITER_NUM = 2
-ITER_EPS = 0.005
+ITER_EPS = 10**(-5)
+max_iter_num = 10
 
+
+def get_points_from_prepared_prediction(i, k):  # считывается только правая часть (НЕ историческая)
+    values = np.genfromtxt("prepared_prediction.txt")
+    new_points = []
+    for value_num in range(len(values)):
+        if np.isnan(values[value_num]):
+            new_points.append(Point(LORENZ[i - k + 1 + value_num], np.array([]), np.nan, 1, 0, 1))  # непрогнозируемая
+        else:
+            new_points.append(Point(LORENZ[i - k + 1 + value_num], np.array([]), values[value_num], 0, 1, 1))  # push дал прогноз
+
+    return new_points
+
+import collections
+def print_predictions_set(point):
+    print(collections.Counter(point.predictions_set))
 
 # @njit
 def reforecast(points):
@@ -76,6 +94,11 @@ def reforecast(points):
                     # print("template", template_number, "can't be used")
                     continue
 
+                if template_vector[indexes_to_compare][0].changed + template_vector[indexes_to_compare][1].changed\
+                        + template_vector[indexes_to_compare][2].changed == 0 and\
+                        not np.isnan(template_vector[claw_to_shoot].predicted_value):
+                    continue
+
                 for shifted_template in shifts_for_each_template[template_number]:
                     if np.linalg.norm(cur_gunpoints - shifted_template[indexes_to_compare]) <= MAX_NORM_DELTA:
                         shooting_point.predictions_set = np.append(
@@ -90,19 +113,28 @@ def reforecast(points):
         point_obj = points[right_point]
 
         if point_obj.predictions_set.size:
-            point_obj.predicted_value = np.mean(point_obj.predictions_set)
+            new_value = np.mean(point_obj.predictions_set)
+            point_obj.changed = (new_value != point_obj.predicted_value)
+            point_obj.predicted_value = new_value
         else:
+            point_obj.changed = 0
             continue
 
         cur_error = abs(point_obj.real_value - point_obj.predicted_value)
+        point_obj.error = cur_error
 
         if DAEMON and cur_error > MAX_ABS_ERROR and right_point != len(points) - 1:
             point_obj.predicted_value = np.nan
             print("%d-th point is unpredictable, error = %f" % (right_point, cur_error))
+            print("set: ", end='')
+            print_predictions_set(points[right_point])
+
         else:
             print("%d-th point is predictable, predicted_value: %f, error = %f" % (right_point, points[right_point].predicted_value, cur_error))
-    for printed_point_index in range(S, len(points)):
-        points[printed_point_index].info()
+            print("set: ", end='')
+            print_predictions_set(points[right_point])
+    # for printed_point_index in range(S, len(points)):
+    #     points[printed_point_index].info()
     print('\n')
 
     return points
@@ -110,16 +142,23 @@ def reforecast(points):
 
 # прогнозирование точки i (index) за k шагов вперед; должна вернуть ошибку и прогнозируемость
 def predict(i, k):
-    complete_points = [Point(_, np.array([]), _, 0, 1) for _ in LORENZ[i - k - 33: i - k + 1]]  # 34 точки
-    new_points = [Point(_, np.array([]), np.nan, 1, 0) for _ in LORENZ[i - k + 1: i + 1]]  # было до i + 34 точки
+    complete_points = [Point(_, np.array([]), _, 0, 1, 1) for _ in LORENZ[i - k - 33: i - k + 1]]  # 34 точки
+    # new_points = [Point(_, np.array([]), np.nan, 1, 0, 1) for _ in LORENZ[i - k + 1: i + 1]]  # было до i + 34 точки
+    new_points = get_points_from_prepared_prediction(i, k)
     points = complete_points + new_points
 
     iter_vectors = []  # list of vectors of points to predict for each iteration
+    iter_errors = np.array([])  # array: rows = iters, columns = points => cell = error on i-th iter on j-th point
+
     for iter_num in range(INITIAL_ITER_NUM):
         print("iter_num: ", iter_num)
         points = reforecast(points)
+        # костыль для изменения changed на 0 у completed точек
+        if iter_num == 0:
+            for tmp_point in range(S):
+                points[tmp_point].changed = 0
         iter_vectors.append(np.array([tmp.predicted_value for tmp in points[S:]]))
-
+        iter_errors = np.concatenate((iter_errors, [tmp.error for tmp in points[S:]]), axis=0)
     iter_num = INITIAL_ITER_NUM
     firstVect = iter_vectors[-1]
     secondVect = iter_vectors[-2]
@@ -127,15 +166,15 @@ def predict(i, k):
     if (np.isnan(firstVect) == np.isnan(secondVect)).all():
         norm_of_iters_diff = np.linalg.norm(firstVect[~np.isnan(firstVect)] - secondVect[~np.isnan(secondVect)])
     print("iter_num:", iter_num, "| difference: ", norm_of_iters_diff)
-    max_iter_num = 5
     while norm_of_iters_diff > ITER_EPS and iter_num <= max_iter_num:
+    # while iter_num <= max_iter_num:
         # print("\n\ncur_point = ".upper(), cur_point, ":", sep='')
         print("iter_num:", iter_num, "| difference: ", norm_of_iters_diff)
         points = reforecast(points)
         iter_vectors.append(np.array([tmp.predicted_value for tmp in points[S:]]))
+        iter_errors = np.concatenate((iter_errors, [tmp.error for tmp in points[S:]]), axis=0)
         firstVect = iter_vectors[-1]
         secondVect = iter_vectors[-2]
-        norm_of_iters_diff = np.inf
         if (np.isnan(firstVect) == np.isnan(secondVect)).all():
             norm_of_iters_diff = np.linalg.norm(firstVect[~np.isnan(firstVect)] - secondVect[~np.isnan(secondVect)])
         iter_num += 1
@@ -144,12 +183,20 @@ def predict(i, k):
     iter_num = 0
     for iter_vector in iter_vectors:
         print("iter_num:", iter_num, "iter vector: |", iter_vector, '|')
-        plt.plot(np.linspace(0, k, k), iter_vector, color=(0.0, 0.0, 0.2 + iter_num / 5))
+        plt.plot(np.linspace(0, k, k), LORENZ[i - k + 1:i + 1], color='red')  # real values
+        plt.scatter(np.linspace(0, k, k), iter_vector, color=(0.0, 0.0, iter_num / 10))
+        plt.show()
         iter_num += 1
     print("last norm difference: ", norm_of_iters_diff)
 
-    plt.plot(np.linspace(0, k, k), LORENZ[i - k + 1:i + 1], color='red')  # real values
-    plt.show()
+    iter_errors = iter_errors.reshape(iter_num, k)
+    for j in range(k):
+        plt.plot(np.linspace(0, iter_num, iter_num), iter_errors[:, j], color='purple')
+        plt.title("errors for %d-th point" % (j + 1))
+        plt.ylabel("RMSE")
+        plt.xlabel("iteration number")
+        plt.show()
+
     return abs(LORENZ[i] - points[-1].predicted_value), not np.isnan(points[-1].predicted_value)
 
 
@@ -204,4 +251,6 @@ for template_number in range(len(templates_by_distances)):
 # # print("time:", t2 - t1)
 #
 
-predict(13165, 15)
+predict(13580, 10)
+
+
