@@ -36,7 +36,7 @@ NUMBER_OF_CLAWS = 4
 TRAIN_GAP = 1000
 TEST_GAP = 1
 
-MAX_NORM_DELTA = 0.015  # было 0.015
+MAX_NORM_DELTA = 0.008  # было 0.015
 MAX_ABS_ERROR = 0.03  # изначально было 0.05
 
 S = 34  # количество предшедствующих точек ряда, необходимое для прогнозирования точки
@@ -57,7 +57,7 @@ def get_points_from_prepared_prediction(i, k):  # считывается тол�
         if np.isnan(values[value_num]):
             new_points.append(Point(LORENZ[i - k + 1 + value_num], np.array([]), np.nan, 1, 0, 1))  # непрогнозируемая
         else:
-            new_points.append(Point(LORENZ[i - k + 1 + value_num], np.array([]), values[value_num], 0, 1, 1))  # push дал прогноз
+            new_points.append(Point(LORENZ[i - k + 1 + value_num], np.array([]), values[value_num], 0, 0, 1))  # push дал прогноз
 
     return new_points
 
